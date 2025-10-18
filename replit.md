@@ -1,195 +1,66 @@
 # NexusPlanner - AI-Powered Marketing Campaign Generator
 
-## Recent Changes (October 18, 2025)
-
-**Option 2: AI Working + Interactive Features - COMPLETED:**
-- ✅ **AI Generation ENABLED**: Successfully configured OpenAI API key via Replit Secrets
-  - Backend now uses GPT-5 for intelligent campaign ideation and channel optimization
-  - AI status displayed in backend logs: "AI Generation: ENABLED"
-  - Falls back to rule-based generation if API key is missing or service unavailable
-- ✅ **Real-Time Progress Indicator**: Enhanced campaign generation modal with live progress updates
-  - Shows 5-step progression: Analyzing signals → Generating ideas → Optimizing channels → Creating plan → Finalizing
-  - Visual feedback with checkmarks and loading spinner
-  - Smooth user experience during 2-5 second AI generation process
-- ✅ **Interactive Campaign Details**: New CampaignDetailModal component
-  - Click any campaign card to view full details in modal
-  - Display campaign theme, ideas, channel strategies, budget, and ROI
-  - Beautiful card-based layout with sections for ideas and channels
-  - Status badges and timeline information
-- ✅ **Regeneration UI**: Interactive buttons to regenerate campaign components
-  - "Regenerate Ideas" button for campaign ideation
-  - "Regenerate Channels" button for channel mix optimization
-  - Loading states with spinning icons during regeneration
-  - Note: Backend endpoints for regeneration ready to be implemented when needed
-- ✅ **Feedback Mechanism**: Like/dislike buttons for campaign quality feedback
-  - Thumbs up/down buttons with visual state changes
-  - Foundation for future AI training and improvement
-  - Note: Backend persistence ready to be implemented when needed
-- ✅ **Enhanced User Experience**: Multiple UX improvements
-  - Campaign cards now clickable for details
-  - Smooth animations and transitions
-  - Disabled form inputs during generation to prevent conflicts
-  - Better error handling and user feedback
-
-**Option 1: Complete the Transformation - COMPLETED:**
-- ✅ **OpenAI Integration**: Configured OPENAI_API_KEY via Replit Secrets for secure API key management
-- ✅ **Production Database**: PostgreSQL + SQLAlchemy with full ORM models and repositories
-- ✅ **Clean Architecture**: Use cases, domain services, and dependency injection fully implemented
-- ✅ **Frontend SOLID Refactoring**: 
-  - Custom hooks for state management (useApi, useDashboard, useCampaigns, useMarketIntelligence, useServices)
-  - Presentational components following Single Responsibility Principle (StatCard, CampaignCard, InsightItem)
-  - Complete separation of business logic from UI
-  - Proper error handling and loading states throughout
-- ✅ **Code Cleanup**: Removed all old code files (app/main_old.py, root main.py)
-- ✅ **Architect Review**: All components reviewed and approved as production-ready
-
-**Previous Implementation (October 17, 2025):**
-- Built full-stack application with FastAPI backend and React frontend
-- Implemented all 4 main pages: Dashboard, Market Intelligence, Campaigns, Services
-- Created AI campaign generation modal with form validation
-- Set up complete API integration between frontend and backend
-- Configured dual workflows for backend (port 8000) and frontend (port 5000)
-
-**Technical Stack:**
-- Backend: FastAPI with Pydantic models, running on Uvicorn
-- Frontend: React 19 with Vite 7, React Router, Axios, Lucide icons
-- Styling: Dark theme with CSS custom properties
-- Data: In-memory storage with seed data for 6 services, 5 market signals, 3 campaigns
-
 ## Overview
-
-NexusPlanner is an AI-powered marketing campaign planning platform that helps enterprises generate data-driven marketing campaigns based on market intelligence, service offerings, and competitive analysis. The application uses market signals to create targeted campaign ideas with channel-specific strategies and budget allocations.
-
-**Core Purpose:** Automate the process of campaign planning by analyzing market trends, service capabilities, and competitive landscapes to generate comprehensive marketing strategies with actionable channel plans.
+NexusPlanner is an AI-powered platform designed to revolutionize marketing campaign generation. It provides a comprehensive solution for businesses to rapidly create, manage, and optimize marketing campaigns using advanced AI capabilities. The project aims to streamline the campaign ideation process, integrate market intelligence, and offer a service catalog to enhance strategic marketing efforts. NexusPlanner focuses on delivering high-quality, data-driven campaign strategies to drive business growth and improve market responsiveness.
 
 ## User Preferences
+**Communication Style:** Simple, everyday language - avoid technical jargon when talking to users.
 
-Preferred communication style: Simple, everyday language.
+**Development Approach:** Fast iteration with working features first, then refinement.
 
 ## System Architecture
 
-### Frontend Architecture
+### UI/UX Decisions
+The frontend is built with React, focusing on an interactive and responsive user interface. Key UI/UX features include:
+- **Real-Time Progress Indicator:** A 5-step visual guide for AI campaign generation.
+- **Interactive Campaign Details:** Modals for detailed campaign views, including regeneration and feedback options.
+- **Status Filtering:** Campaigns can be filtered by 'All', 'Active', 'Draft', and 'Completed'.
+- **Dark Theme:** A responsive design with a default dark theme for improved user experience.
+- **Styling:** Pure CSS with CSS Custom Properties for a clean and maintainable design.
+- **State Management:** Utilizes custom React hooks for localized and efficient state management.
 
-**Technology Stack:**
-- **Framework:** React 19.1.1 with Vite 7.1.7 build tooling
-- **Routing:** React Router DOM v7.9.4 for client-side navigation
-- **HTTP Client:** Axios 1.12.2 for API communication
-- **Icons:** Lucide React for UI iconography
-- **Styling:** Pure CSS with CSS custom properties (CSS variables) for theming
+### Technical Implementations
+The system adheres to **Clean Architecture** principles, incorporating **Domain-Driven Design (DDD)** and **SOLID** patterns. It comprises a React frontend and a FastAPI backend, communicating via RESTful APIs.
 
-**Design Decisions:**
-- **SPA Architecture:** Single-page application with client-side routing to provide a seamless user experience
-- **Component-Based Structure:** Organized into reusable components (Navbar, CampaignModal) and page-level views (Dashboard, Campaigns, MarketIntelligence, Services)
-- **API Layer Abstraction:** Centralized API client (`src/api/client.js`) that exports domain-specific API modules (dashboardAPI, campaignsAPI, marketIntelligenceAPI, servicesAPI)
-- **Custom Theming:** CSS variables defined in `index.css` for consistent dark theme across the application
-- **Development Server Configuration:** Configured for Replit environment with HMR over WSS and external host binding
+**Frontend (React):**
+- **Framework:** React 19.1.1 with Vite for fast development.
+- **Routing:** React Router DOM v7.9.4.
+- **HTTP Client:** Axios 1.12.2.
+- **Component Design:** Employs presentational components for reusability and maintainability.
+- **API Client:** Centralized API client for all backend interactions.
 
-**Rationale:** React with Vite provides fast development experience and optimal production builds. The component architecture allows for code reuse and maintainability. Centralized API client prevents code duplication and makes endpoint management easier.
+**Backend (FastAPI):**
+- **Framework:** FastAPI 0.115.0 for high performance and automatic validation.
+- **ORM:** SQLAlchemy 2.x for PostgreSQL database interaction.
+- **Validation:** Pydantic 2.9.2 for robust data validation.
+- **Layered Architecture:**
+    - **Domain Layer:** Contains core business logic, entities (Campaign, MarketSignal, Service), value objects (Money, DateRange), and domain services (CampaignIdeationService).
+    - **Application Layer:** Orchestrates domain logic through use cases (e.g., GenerateCampaignUseCase).
+    - **Infrastructure Layer:** Handles external concerns like database persistence (SQLAlchemy repositories) and AI integration (OpenAI adapter).
+    - **API Layer:** FastAPI routes exposing use cases and defining request/response schemas.
 
-### Backend Architecture
+### Feature Specifications
+- **AI-Powered Campaign Generation:** Generates campaign ideas and strategies using OpenAI GPT-5.
+- **Campaign Management:** View, filter, and interact with generated campaigns. Future features include editing, duplication, and performance tracking.
+- **Market Intelligence:** Tracks and displays market signals to inform campaign strategies.
+- **Service Catalog:** Manages and displays available services with associated metrics.
+- **Regeneration and Feedback:** Interactive UI elements to regenerate campaign ideas/channels and provide feedback.
+- **Search and Filtering:** Planned functionality for searching campaigns and filtering market intelligence/services.
 
-**Technology Stack:**
-- **Framework:** FastAPI (async-capable Python web framework)
-- **Data Validation:** Pydantic v2 for request/response schemas and type safety
-- **Server:** Uvicorn ASGI server
-
-**Design Patterns:**
-- **Layered Architecture:** Clear separation between routes (app/main.py), business logic (app/services/), data models (app/models/), and storage (app/storage/)
-- **Service Layer Pattern:** Campaign generation logic encapsulated in `CampaignGenerator` class
-- **Repository Pattern:** `MemStorage` class provides abstraction over data access
-- **Pydantic Models:** Strong typing and validation for all data structures (Campaign, MarketSignal, Service, etc.)
-
-**Key Components:**
-
-1. **Models Layer** (`app/models/`):
-   - Domain entities: Campaign, MarketSignal, Service
-   - Enums for status and impact levels (CampaignStatus, ImpactLevel)
-   - Request/response DTOs (CampaignGenerationRequest)
-   - **Why:** Ensures type safety, automatic validation, and clear API contracts
-
-2. **Services Layer** (`app/services/`):
-   - `CampaignGenerator`: Core business logic for generating campaign plans based on services and market signals
-   - Implements idea generation, channel planning, and budget allocation algorithms
-   - **Why:** Separates business logic from HTTP layer, making it testable and reusable
-
-3. **Storage Layer** (`app/storage/`):
-   - `MemStorage`: In-memory data storage for MVP
-   - Seed data generation for services, market signals, and sample campaigns
-   - **Why:** Simple implementation for prototype; designed to be replaceable with database integration
-
-4. **API Layer** (`app/main.py`):
-   - RESTful endpoints for dashboard metrics, campaigns, market intelligence, and services
-   - CORS middleware configured to allow frontend access
-   - **Why:** FastAPI provides automatic OpenAPI documentation and high performance
-
-**API Endpoints:**
-- `GET /api/dashboard/metrics` - Dashboard statistics
-- `GET /api/campaigns` - List all campaigns
-- `GET /api/campaigns/recent` - Recent campaigns
-- `GET /api/campaigns/{id}` - Single campaign details
-- `POST /api/campaigns/generate` - Generate new campaign from request
-
-**Rationale:** FastAPI chosen for its automatic validation, async support, and excellent developer experience. The layered architecture makes the codebase maintainable and allows for future scalability. In-memory storage is appropriate for MVP but designed to be easily replaced with persistent storage.
-
-### Cross-Cutting Concerns
-
-**CORS Configuration:**
-- Configured to allow all origins (`allow_origins=["*"]`) for development
-- **Production Consideration:** Should be restricted to specific frontend domain
-
-**Data Flow:**
-1. User submits campaign generation request through frontend
-2. Request validated by Pydantic models
-3. CampaignGenerator analyzes services and market signals
-4. Campaign plan generated with ideas and channel strategies
-5. Campaign stored in MemStorage and returned to client
+### System Design Choices
+- **Repository Pattern:** Abstracted data access for flexibility.
+- **Dependency Injection:** Used for managing and providing dependencies throughout the backend.
+- **Adapter Pattern:** Isolates external services like OpenAI from core domain logic.
+- **Value Objects:** Ensures type safety and immutability for critical domain concepts (e.g., Money, DateRange).
+- **Database Schema:** PostgreSQL with specific tables for `services`, `market_signals`, `campaigns`, `campaign_ideas`, and `channel_plans`, designed for data integrity and performance.
+- **CORS Configuration:** Setup for development with plans for production-grade security.
 
 ## External Dependencies
 
-### Frontend Dependencies
-
-**Production:**
-- `axios` (^1.12.2) - Promise-based HTTP client for API requests
-- `lucide-react` (^0.546.0) - Icon library for UI elements
-- `react` (^19.1.1) - UI library
-- `react-dom` (^19.1.1) - React DOM rendering
-- `react-router-dom` (^7.9.4) - Client-side routing
-
-**Development:**
-- `@vitejs/plugin-react` (^5.0.4) - Vite plugin for React with Fast Refresh
-- `eslint` (^9.36.0) - Code linting
-- `vite` (^7.1.7) - Build tool and dev server
-
-### Backend Dependencies
-
-**Production:**
-- `fastapi` (0.115.0) - Modern Python web framework
-- `uvicorn[standard]` (0.30.6) - ASGI server with WebSocket and watchdog support
-- `pydantic` (2.9.2) - Data validation using Python type annotations
-
-**Development:**
-- `python-dotenv` (1.0.1) - Environment variable management
-
-### Third-Party Services
-
-**Current State:**
-- No external APIs or cloud services currently integrated
-- Application runs entirely on local/container infrastructure
-
-**Future Integration Points:**
-- AI/LLM APIs for enhanced campaign idea generation (suggested by codebase structure)
-- Analytics platforms for campaign performance tracking
-- CRM integrations for audience data
-- Market intelligence data providers
-- Cloud storage for persistent data (when moving beyond MemStorage)
-
-### Database
-
-**Current Implementation:**
-- In-memory storage using Python dictionaries
-- Seed data includes sample services, market signals, and campaigns
-- No persistent storage layer
-
-**Migration Path:**
-- Storage abstraction (`MemStorage`) designed to be replaced with database-backed implementation
-- Pydantic models can be adapted to work with ORMs like SQLAlchemy or database clients like PostgreSQL via psycopg2/asyncpg
+- **OpenAI GPT-5:** Integrated via `gpt-4o` model for AI-powered campaign ideation and content generation.
+- **PostgreSQL:** Primary database, managed by Replit (Neon-backed), accessed via SQLAlchemy ORM.
+- **Axios:** Frontend HTTP client for API communication.
+- **Lucide React:** Lightweight icon library for the frontend.
+- **Vite:** Frontend build tool.
+- **Uvicorn:** ASGI server for FastAPI.
+- **Psycopg2-binary:** PostgreSQL adapter for Python.
