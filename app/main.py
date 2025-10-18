@@ -28,6 +28,13 @@ from app.infrastructure.persistence.models.agent_decision_orm import (
     ExecutionTraceORM,
     ReasoningStepORM
 )
+from app.infrastructure.persistence.models.agent_memory_orm import (
+    AgentMemoryORM,
+    AgentLearningORM,
+    AgentConversationORM,
+    MultiAgentCoordinationORM,
+    AgentFeedbackLoopORM
+)
 from app.infrastructure.persistence.models.campaign_template_orm import CampaignTemplateORM
 from app.infrastructure.persistence.models.user_orm import UserORM
 
