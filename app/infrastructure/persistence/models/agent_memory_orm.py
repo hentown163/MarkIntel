@@ -34,11 +34,11 @@ class AgentMemoryORM(Base):
     access_count = Column(Integer, nullable=False, default=0)
     
     tags = Column(JSON, nullable=True)  # For easy retrieval
-    metadata = Column(JSON, nullable=True)
+    meta = Column(JSON, nullable=True)  # renamed from 'metadata' to avoid SQLAlchemy conflict
     
     __table_args__ = (
-        Index('idx_agent_type_importance', 'agent_id', 'memory_type', 'importance_score'),
-        Index('idx_session_created', 'session_id', 'created_at'),
+        Index('idx_memory_agent_type_importance', 'agent_id', 'memory_type', 'importance_score'),
+        Index('idx_memory_session_created', 'session_id', 'created_at'),
     )
 
 
@@ -75,7 +75,7 @@ class AgentLearningORM(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
     last_applied = Column(DateTime, nullable=True)
     
-    metadata = Column(JSON, nullable=True)
+    meta = Column(JSON, nullable=True)  # renamed from 'metadata' to avoid SQLAlchemy conflict
     
     __table_args__ = (
         Index('idx_category_confidence', 'learning_category', 'confidence'),
@@ -104,11 +104,11 @@ class AgentConversationORM(Base):
     entities = Column(JSON, nullable=True)  # Extracted entities
     
     timestamp = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
-    metadata = Column(JSON, nullable=True)
+    meta = Column(JSON, nullable=True)  # renamed from 'metadata' to avoid SQLAlchemy conflict
     
     __table_args__ = (
-        Index('idx_conversation_turn', 'conversation_id', 'turn_number'),
-        Index('idx_session_timestamp', 'session_id', 'timestamp'),
+        Index('idx_conv_conversation_turn', 'conversation_id', 'turn_number'),
+        Index('idx_conv_session_timestamp', 'session_id', 'timestamp'),
     )
 
 
@@ -148,13 +148,13 @@ class MultiAgentCoordinationORM(Base):
     result = Column(JSON, nullable=True)
     success = Column(Boolean, nullable=True)
     
-    metadata = Column(JSON, nullable=True)
+    meta = Column(JSON, nullable=True)  # renamed from 'metadata' to avoid SQLAlchemy conflict
     
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
     
     __table_args__ = (
-        Index('idx_task_state', 'task_type', 'workflow_state'),
-        Index('idx_coordinator_time', 'coordinator_agent', 'start_time'),
+        Index('idx_coord_task_state', 'task_type', 'workflow_state'),
+        Index('idx_coord_coordinator_time', 'coordinator_agent', 'start_time'),
     )
 
 
@@ -192,9 +192,9 @@ class AgentFeedbackLoopORM(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
     completed_at = Column(DateTime, nullable=True)
     
-    metadata = Column(JSON, nullable=True)
+    meta = Column(JSON, nullable=True)  # renamed from 'metadata' to avoid SQLAlchemy conflict
     
     __table_args__ = (
-        Index('idx_agent_status', 'agent_id', 'status'),
-        Index('idx_correction_needed', 'correction_needed', 'created_at'),
+        Index('idx_feedback_agent_status', 'agent_id', 'status'),
+        Index('idx_feedback_correction_needed', 'correction_needed', 'created_at'),
     )
