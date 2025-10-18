@@ -1,5 +1,5 @@
 """Campaign Response DTOs"""
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date
 
@@ -54,7 +54,7 @@ class CampaignResponseDTO(BaseModel):
     total_budget: float
     expected_roi: float
     metrics: Optional[CampaignMetricsDTO] = None
-    feedback_history: List[FeedbackHistoryDTO] = []
+    feedback_history: List[FeedbackHistoryDTO] = Field(default_factory=list)
     
     class Config:
         from_attributes = True
