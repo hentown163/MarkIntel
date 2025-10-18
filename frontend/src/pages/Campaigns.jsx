@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Sparkles, Search } from 'lucide-react';
 import { useCampaigns } from '../hooks';
 import CampaignModal from '../components/CampaignModal';
+import CampaignDetailModal from '../components/CampaignDetailModal';
 import CampaignCard from '../components/CampaignCard';
 import './Campaigns.css';
 
 export default function Campaigns() {
   const [filter, setFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
   const { campaigns, loading, error, reload } = useCampaigns();
 
   const filteredCampaigns = filter === 'all' 
@@ -16,6 +18,10 @@ export default function Campaigns() {
 
   const getCountByStatus = (status) => {
     return campaigns.filter(c => c.status === status).length;
+  };
+
+  const handleCampaignClick = (campaign) => {
+    setSelectedCampaign(campaign);
   };
 
   if (error) {
@@ -71,7 +77,7 @@ export default function Campaigns() {
         ) : (
           filteredCampaigns.map((campaign) => (
             <div key={campaign.id} className="campaign-item">
-              <CampaignCard campaign={campaign} />
+              <CampaignCard campaign={campaign} onClick={handleCampaignClick} />
             </div>
           ))
         )}
@@ -81,6 +87,13 @@ export default function Campaigns() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSuccess={reload} 
+      />
+
+      <CampaignDetailModal
+        campaign={selectedCampaign}
+        isOpen={!!selectedCampaign}
+        onClose={() => setSelectedCampaign(null)}
+        onUpdate={reload}
       />
     </div>
   );

@@ -155,3 +155,30 @@
   background-color: var(--bg-card);
   color: var(--text-primary);
 }
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+.campaign-detail-modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.campaign-detail-section {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1.5rem;
+}
+
+.campaign-detail-section:last-of-type {
+  border-bottom: none;
+}

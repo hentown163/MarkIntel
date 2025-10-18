@@ -1,11 +1,11 @@
 import PropTypes from 'prop-types';
 import { Calendar, ArrowUp } from 'lucide-react';
 
-export default function CampaignCard({ campaign }) {
+export default function CampaignCard({ campaign, onClick }) {
   const { name, status, theme, start_date, end_date, metrics, channel_mix } = campaign;
   
   return (
-    <div className="campaign-card">
+    <div className="campaign-card" onClick={() => onClick?.(campaign)} style={{ cursor: 'pointer' }}>
       <div className="campaign-header">
         <h3>{name}</h3>
         <span className={`status-badge ${status}`}>{status}</span>
@@ -44,4 +44,5 @@ CampaignCard.propTypes = {
     metrics: PropTypes.object,
     channel_mix: PropTypes.arrayOf(PropTypes.object),
   }).isRequired,
+  onClick: PropTypes.func,
 };
