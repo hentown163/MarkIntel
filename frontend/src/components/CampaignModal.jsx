@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 import { X, Sparkles } from 'lucide-react';
 import { campaignsAPI } from '../api/client';
 import './CampaignModal.css';
@@ -11,15 +12,16 @@ export default function CampaignModal({ isOpen, onClose, onSuccess }) {
     additional_context: '',
     duration_days: 30,
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setError(null);
+    setLoading(true);
+    
     try {
       await campaignsAPI.generate(formData);
-      onSuccess?.();
-      onClose();
       setFormData({
         product_service: '',
         target_audience: '',
@@ -27,11 +29,17 @@ export default function CampaignModal({ isOpen, onClose, onSuccess }) {
         additional_context: '',
         duration_days: 30,
       });
-    } catch (error) {
-      console.error('Error generating campaign:', error);
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message || 'Failed to generate campaign');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
+  };
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   if (!isOpen) return null;
@@ -54,6 +62,12 @@ export default function CampaignModal({ isOpen, onClose, onSuccess }) {
           comprehensive campaign strategy.
         </p>
 
+        {error && (
+          <div className="error-message" style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#fee', color: '#c00', borderRadius: '4px' }}>
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="modal-form">
           <div className="form-group">
             <label htmlFor="product_service">Product/Service *</label>
@@ -62,7 +76,7 @@ export default function CampaignModal({ isOpen, onClose, onSuccess }) {
               id="product_service"
               placeholder="e.g., Cloud Security Platform, AI Analytics Tool"
               value={formData.product_service}
-              onChange={(e) => setFormData({ ...formData, product_service: e.target.value })}
+              onChange={(e) => handleChange('product_service', e.target.value)}
               required
             />
           </div>
@@ -74,7 +88,7 @@ export default function CampaignModal({ isOpen, onClose, onSuccess }) {
               id="target_audience"
               placeholder="e.g., Enterprise CIOs, SMB Technology Managers"
               value={formData.target_audience}
-              onChange={(e) => setFormData({ ...formData, target_audience: e.target.value })}
+              onChange={(e) => handleChange('target_audience', e.target.value)}
               required
             />
           </div>
@@ -86,7 +100,7 @@ export default function CampaignModal({ isOpen, onClose, onSuccess }) {
               id="competitors"
               placeholder="e.g., AWS, Azure, Google Cloud"
               value={formData.competitors}
-              onChange={(e) => setFormData({ ...formData, competitors: e.target.value })}
+              onChange={(e) => handleChange('competitors', e.target.value)}
             />
           </div>
 
@@ -97,17 +111,17 @@ export default function CampaignModal({ isOpen, onClose, onSuccess }) {
               placeholder="Any specific market trends, recent announcements, or strategic goals..."
               rows={4}
               value={formData.additional_context}
-              onChange={(e) => setFormData({ ...formData, additional_context: e.target.value })}
+              onChange={(e) => handleChange('additional_context', e.target.value)}
             />
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="btn-secondary" onClick={onClose}>
+            <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
+            <button type="submit" className="btn-primary" disabled={loading}>
               <Sparkles size={16} />
-              {isSubmitting ? 'Generating...' : 'Generate Campaign'}
+              {loading ? 'Generating...' : 'Generate Campaign'}
             </button>
           </div>
         </form>
@@ -115,3 +129,9 @@ export default function CampaignModal({ isOpen, onClose, onSuccess }) {
     </div>
   );
 }
+
+CampaignModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func,
+};

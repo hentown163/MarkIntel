@@ -1,23 +1,44 @@
-import { useState, useEffect } from 'react';
 import { TrendingUp, Filter } from 'lucide-react';
-import { marketIntelligenceAPI } from '../api/client';
+import { useMarketIntelligence } from '../hooks';
 import './MarketIntelligence.css';
 
+function SignalCard({ signal }) {
+  return (
+    <div className="signal-card">
+      <div className="signal-icon">
+        <TrendingUp size={24} />
+      </div>
+      <div className="signal-content">
+        <div className="signal-header">
+          <h3>{signal.content.split('.')[0]}</h3>
+          <span className={`impact-badge ${signal.impact}`}>{signal.impact} impact</span>
+        </div>
+        <p className="signal-description">{signal.content}</p>
+        <div className="signal-meta">
+          <span className="signal-source">{signal.source}</span>
+          <span className="signal-time">{new Date(signal.timestamp).toLocaleString()}</span>
+          <div className="signal-tags">
+            {signal.category && <span className="tag">{signal.category}</span>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MarketIntelligence() {
-  const [signals, setSignals] = useState([]);
+  const { signals, loading, error, reload } = useMarketIntelligence();
 
-  useEffect(() => {
-    loadSignals();
-  }, []);
-
-  const loadSignals = async () => {
-    try {
-      const res = await marketIntelligenceAPI.getAll();
-      setSignals(res.data);
-    } catch (error) {
-      console.error('Error loading signals:', error);
-    }
-  };
+  if (error) {
+    return (
+      <div className="market-intelligence">
+        <div className="error-message">
+          Error loading market intelligence: {error}
+          <button onClick={reload}>Retry</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="market-intelligence">
@@ -33,27 +54,13 @@ export default function MarketIntelligence() {
       </div>
 
       <div className="signals-list">
-        {signals.map((signal) => (
-          <div key={signal.id} className="signal-card">
-            <div className="signal-icon">
-              <TrendingUp size={24} />
-            </div>
-            <div className="signal-content">
-              <div className="signal-header">
-                <h3>{signal.content.split('.')[0]}</h3>
-                <span className={`impact-badge ${signal.impact}`}>{signal.impact} impact</span>
-              </div>
-              <p className="signal-description">{signal.content}</p>
-              <div className="signal-meta">
-                <span className="signal-source">{signal.source}</span>
-                <span className="signal-time">{new Date(signal.timestamp).toLocaleString()}</span>
-                <div className="signal-tags">
-                  {signal.category && <span className="tag">{signal.category}</span>}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+        {loading && signals.length === 0 ? (
+          <div>Loading market signals...</div>
+        ) : (
+          signals.map((signal) => (
+            <SignalCard key={signal.id} signal={signal} />
+          ))
+        )}
       </div>
     </div>
   );

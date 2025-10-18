@@ -1,30 +1,33 @@
-import { useState, useEffect } from 'react';
-import { Sparkles, Search, Plus } from 'lucide-react';
-import { campaignsAPI } from '../api/client';
+import { useState } from 'react';
+import { Sparkles, Search } from 'lucide-react';
+import { useCampaigns } from '../hooks';
 import CampaignModal from '../components/CampaignModal';
+import CampaignCard from '../components/CampaignCard';
 import './Campaigns.css';
 
 export default function Campaigns() {
-  const [campaigns, setCampaigns] = useState([]);
   const [filter, setFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  useEffect(() => {
-    loadCampaigns();
-  }, []);
-
-  const loadCampaigns = async () => {
-    try {
-      const res = await campaignsAPI.getAll();
-      setCampaigns(res.data);
-    } catch (error) {
-      console.error('Error loading campaigns:', error);
-    }
-  };
+  const { campaigns, loading, error, reload } = useCampaigns();
 
   const filteredCampaigns = filter === 'all' 
     ? campaigns 
     : campaigns.filter(c => c.status === filter);
+
+  const getCountByStatus = (status) => {
+    return campaigns.filter(c => c.status === status).length;
+  };
+
+  if (error) {
+    return (
+      <div className="campaigns-page">
+        <div className="error-message">
+          Error loading campaigns: {error}
+          <button onClick={reload}>Retry</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="campaigns-page">
@@ -49,46 +52,36 @@ export default function Campaigns() {
             All Campaigns ({campaigns.length})
           </button>
           <button className={filter === 'active' ? 'active' : ''} onClick={() => setFilter('active')}>
-            Active ({campaigns.filter(c => c.status === 'active').length})
+            Active ({getCountByStatus('active')})
           </button>
           <button className={filter === 'draft' ? 'active' : ''} onClick={() => setFilter('draft')}>
-            Draft ({campaigns.filter(c => c.status === 'draft').length})
+            Draft ({getCountByStatus('draft')})
           </button>
           <button className={filter === 'completed' ? 'active' : ''} onClick={() => setFilter('completed')}>
-            Completed ({campaigns.filter(c => c.status === 'completed').length})
+            Completed ({getCountByStatus('completed')})
           </button>
         </div>
       </div>
 
       <div className="campaigns-grid">
-        {filteredCampaigns.map((campaign) => (
-          <div key={campaign.id} className="campaign-item">
-            <div className="campaign-item-header">
-              <h3>{campaign.name}</h3>
-              <span className={`status-badge ${campaign.status}`}>{campaign.status}</span>
+        {loading && campaigns.length === 0 ? (
+          <div>Loading campaigns...</div>
+        ) : filteredCampaigns.length === 0 ? (
+          <div>No campaigns found. Try generating one!</div>
+        ) : (
+          filteredCampaigns.map((campaign) => (
+            <div key={campaign.id} className="campaign-item">
+              <CampaignCard campaign={campaign} />
             </div>
-            <div className="campaign-theme">
-              <span className="theme-icon">💡</span>
-              <span>{campaign.theme}</span>
-            </div>
-            <div className="campaign-dates">
-              📅 {campaign.start_date} - {campaign.end_date}
-            </div>
-            {campaign.metrics && (
-              <div className="campaign-metrics">
-                📈 {campaign.metrics.engagement || campaign.metrics.leads || campaign.metrics.conversions}
-              </div>
-            )}
-            <div className="campaign-channels-grid">
-              {campaign.channel_mix.map((channel, idx) => (
-                <span key={idx} className="channel-badge">{channel.channel}</span>
-              ))}
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
-      <CampaignModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadCampaigns} />
+      <CampaignModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={reload} 
+      />
     </div>
   );
 }

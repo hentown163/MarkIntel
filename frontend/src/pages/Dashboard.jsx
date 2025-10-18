@@ -1,42 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Target, TrendingUp, Users, Sparkles, Calendar, ArrowUp } from 'lucide-react';
-import { dashboardAPI, campaignsAPI, marketIntelligenceAPI } from '../api/client';
+import { Sparkles } from 'lucide-react';
+import { useDashboard } from '../hooks';
 import CampaignModal from '../components/CampaignModal';
+import StatCard from '../components/StatCard';
+import CampaignCard from '../components/CampaignCard';
+import InsightItem from '../components/InsightItem';
 import './Dashboard.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [metrics, setMetrics] = useState(null);
-  const [recentCampaigns, setRecentCampaigns] = useState([]);
-  const [recentInsights, setRecentInsights] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { recentCampaigns, recentInsights, loading, error, reload, getStatCards } = useDashboard();
+  
+  const statCards = getStatCards();
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      const [metricsRes, campaignsRes, insightsRes] = await Promise.all([
-        dashboardAPI.getMetrics(),
-        campaignsAPI.getRecent(),
-        marketIntelligenceAPI.getRecent(),
-      ]);
-      setMetrics(metricsRes.data);
-      setRecentCampaigns(campaignsRes.data.campaigns || []);
-      setRecentInsights(insightsRes.data || []);
-    } catch (error) {
-      console.error('Error loading dashboard:', error);
-    }
-  };
-
-  const statCards = metrics ? [
-    { icon: Target, label: 'Active Campaigns', value: metrics.active_campaigns.count, change: metrics.active_campaigns.change },
-    { icon: TrendingUp, label: 'Market Insights', value: metrics.market_insights.count, change: metrics.market_insights.change },
-    { icon: Users, label: 'Competitor tracking', value: metrics.competitor_tracking.count, change: metrics.competitor_tracking.change },
-    { icon: Sparkles, label: 'AI Generations', value: metrics.ai_generations.count, change: metrics.ai_generations.change },
-  ] : [];
+  if (error) {
+    return (
+      <div className="dashboard">
+        <div className="error-message">
+          Error loading dashboard: {error}
+          <button onClick={reload}>Retry</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -52,21 +40,19 @@ export default function Dashboard() {
       </div>
 
       <div className="stats-grid">
-        {statCards.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <div key={index} className="stat-card">
-              <div className="stat-icon">
-                <Icon size={24} />
-              </div>
-              <div className="stat-content">
-                <h3>{stat.value}</h3>
-                <p>{stat.label}</p>
-                <span className="stat-change">{stat.change}</span>
-              </div>
-            </div>
-          );
-        })}
+        {loading && statCards.length === 0 ? (
+          <div>Loading metrics...</div>
+        ) : (
+          statCards.map((stat, index) => (
+            <StatCard 
+              key={index} 
+              iconName={stat.iconName} 
+              label={stat.label} 
+              value={stat.value} 
+              change={stat.change} 
+            />
+          ))
+        )}
       </div>
 
       <div className="dashboard-content">
@@ -76,29 +62,15 @@ export default function Dashboard() {
             <button className="view-all" onClick={() => navigate('/campaigns')}>View all →</button>
           </div>
           <div className="campaigns-list">
-            {recentCampaigns.map((campaign) => (
-              <div key={campaign.id} className="campaign-card">
-                <div className="campaign-header">
-                  <h3>{campaign.name}</h3>
-                  <span className={`status-badge ${campaign.status}`}>{campaign.status}</span>
-                </div>
-                <div className="campaign-theme">
-                  <span className="theme-icon">💡</span>
-                  <span>{campaign.theme}</span>
-                </div>
-                <div className="campaign-meta">
-                  <span><Calendar size={14} /> {campaign.start_date} - {campaign.end_date}</span>
-                  {campaign.metrics && (
-                    <span><ArrowUp size={14} /> {campaign.metrics.engagement || campaign.metrics.leads || campaign.metrics.conversions}</span>
-                  )}
-                </div>
-                <div className="campaign-channels">
-                  {campaign.channel_mix.slice(0, 4).map((channel, idx) => (
-                    <span key={idx} className="channel-tag">{channel.channel}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
+            {loading && recentCampaigns.length === 0 ? (
+              <div>Loading campaigns...</div>
+            ) : recentCampaigns.length === 0 ? (
+              <div>No campaigns yet. Generate your first campaign!</div>
+            ) : (
+              recentCampaigns.map((campaign) => (
+                <CampaignCard key={campaign.id} campaign={campaign} />
+              ))
+            )}
           </div>
         </div>
 
@@ -108,26 +80,22 @@ export default function Dashboard() {
             <button className="view-all" onClick={() => navigate('/market-intelligence')}>View all →</button>
           </div>
           <div className="insights-list">
-            {recentInsights.map((insight) => (
-              <div key={insight.id} className="insight-item">
-                <div className="insight-icon">
-                  <TrendingUp size={20} />
-                </div>
-                <div className="insight-content">
-                  <h4>{insight.content.split('.')[0]}</h4>
-                  <div className="insight-meta">
-                    <span className="insight-source">{insight.source}</span>
-                    <span className="insight-time">{new Date(insight.timestamp).toLocaleTimeString()}</span>
-                  </div>
-                </div>
-                <span className={`impact-badge ${insight.impact}`}>{insight.impact} impact</span>
-              </div>
-            ))}
+            {loading && recentInsights.length === 0 ? (
+              <div>Loading insights...</div>
+            ) : (
+              recentInsights.map((insight) => (
+                <InsightItem key={insight.id} insight={insight} />
+              ))
+            )}
           </div>
         </div>
       </div>
 
-      <CampaignModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadData} />
+      <CampaignModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={reload} 
+      />
     </div>
   );
 }
