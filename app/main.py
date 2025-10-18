@@ -13,7 +13,9 @@ from app.core.exceptions import EntityNotFoundError, UseCaseError
 from app.infrastructure.config.database import get_db, init_db
 from app.core.container import Container
 from app.application.dtos.request.generate_campaign_request import GenerateCampaignRequestDTO
+from app.application.dtos.request.campaign_feedback_request import CampaignFeedbackRequestDTO
 from app.application.dtos.response.campaign_response import CampaignResponseDTO, CampaignListResponseDTO
+from app.application.dtos.response.feedback_response import FeedbackResponseDTO
 
 from app.infrastructure.persistence.seed_data import seed_database
 
@@ -113,6 +115,68 @@ def get_campaign(campaign_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Campaign not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.patch("/api/campaigns/{campaign_id}/regenerate-ideas", response_model=CampaignResponseDTO)
+def regenerate_campaign_ideas(campaign_id: str, db: Session = Depends(get_db)):
+    """
+    Regenerate campaign ideas using AI (or rule-based fallback)
+    
+    This endpoint allows users to get fresh campaign ideas while keeping
+    the same campaign structure and channel strategies.
+    """
+    try:
+        use_case = Container.get_regenerate_ideas_use_case(db)
+        return use_case.execute(campaign_id)
+    except EntityNotFoundError:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    except UseCaseError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+
+
+@app.patch("/api/campaigns/{campaign_id}/regenerate-strategies", response_model=CampaignResponseDTO)
+def regenerate_channel_strategies(campaign_id: str, db: Session = Depends(get_db)):
+    """
+    Regenerate channel strategies using AI (or rule-based fallback)
+    
+    This endpoint allows users to get optimized channel mix and strategies
+    while keeping the same campaign ideas.
+    """
+    try:
+        use_case = Container.get_regenerate_strategies_use_case(db)
+        return use_case.execute(campaign_id)
+    except EntityNotFoundError:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    except UseCaseError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+
+
+@app.post("/api/campaigns/{campaign_id}/feedback", response_model=FeedbackResponseDTO)
+def submit_campaign_feedback(
+    campaign_id: str,
+    feedback: CampaignFeedbackRequestDTO,
+    db: Session = Depends(get_db)
+):
+    """
+    Submit feedback for a campaign
+    
+    Allows users to provide like/dislike feedback on campaign ideas,
+    strategies, or overall campaign. This helps track user preferences
+    and improve future campaign generation.
+    """
+    try:
+        use_case = Container.get_record_feedback_use_case(db)
+        return use_case.execute(campaign_id, feedback)
+    except EntityNotFoundError:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    except UseCaseError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
 
 @app.get("/api/services")

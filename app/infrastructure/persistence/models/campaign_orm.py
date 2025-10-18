@@ -26,6 +26,8 @@ class CampaignORM(Base):
     total_budget = Column(Float, nullable=False)
     expected_roi = Column(Float, nullable=False)
     metrics_json = Column(JSON, nullable=True)
+    service_id = Column(String, nullable=True)
+    feedback_history = Column(JSON, nullable=True, default=[])
     
     ideas = relationship("CampaignIdeaORM", back_populates="campaign", cascade="all, delete-orphan")
     channel_mix = relationship("ChannelPlanORM", back_populates="campaign", cascade="all, delete-orphan")

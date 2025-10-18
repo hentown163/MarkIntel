@@ -9,6 +9,9 @@ from app.infrastructure.llm.openai_campaign_ideation_adapter import OpenAICampai
 from app.application.use_cases.generate_campaign_use_case import GenerateCampaignUseCase
 from app.application.use_cases.list_campaigns_use_case import ListCampaignsUseCase
 from app.application.use_cases.get_campaign_detail_use_case import GetCampaignDetailUseCase
+from app.application.use_cases.regenerate_ideas_use_case import RegenerateIdeasUseCase
+from app.application.use_cases.regenerate_strategies_use_case import RegenerateStrategiesUseCase
+from app.application.use_cases.record_feedback_use_case import RecordFeedbackUseCase
 from app.core.settings import settings
 
 
@@ -75,5 +78,30 @@ class Container:
     def get_campaign_detail_use_case(session: Session):
         """Get campaign detail use case"""
         return GetCampaignDetailUseCase(
+            campaign_repo=Container.get_campaign_repository(session)
+        )
+    
+    @staticmethod
+    def get_regenerate_ideas_use_case(session: Session):
+        """Get regenerate ideas use case"""
+        return RegenerateIdeasUseCase(
+            campaign_repo=Container.get_campaign_repository(session),
+            service_repo=Container.get_service_repository(session),
+            signal_repo=Container.get_market_signal_repository(session),
+            ideation_service=Container.get_ideation_service()
+        )
+    
+    @staticmethod
+    def get_regenerate_strategies_use_case(session: Session):
+        """Get regenerate strategies use case"""
+        return RegenerateStrategiesUseCase(
+            campaign_repo=Container.get_campaign_repository(session),
+            ideation_service=Container.get_ideation_service()
+        )
+    
+    @staticmethod
+    def get_record_feedback_use_case(session: Session):
+        """Get record feedback use case"""
+        return RecordFeedbackUseCase(
             campaign_repo=Container.get_campaign_repository(session)
         )

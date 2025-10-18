@@ -60,6 +60,15 @@ class CampaignMetrics:
 
 
 @dataclass
+class CampaignFeedback:
+    """Campaign feedback value object"""
+    feedback_type: str
+    target: str
+    comment: Optional[str] = None
+    timestamp: Optional[str] = None
+
+
+@dataclass
 class Campaign:
     """
     Campaign aggregate root
@@ -78,6 +87,8 @@ class Campaign:
     total_budget: Money
     expected_roi: float
     metrics: Optional[CampaignMetrics] = None
+    service_id: Optional[str] = None
+    feedback_history: List[CampaignFeedback] = field(default_factory=list)
     
     def __post_init__(self):
         self._validate()
@@ -126,3 +137,7 @@ class Campaign:
     def update_metrics(self, metrics: CampaignMetrics):
         """Update campaign metrics"""
         self.metrics = metrics
+    
+    def add_feedback(self, feedback: CampaignFeedback):
+        """Add feedback to campaign"""
+        self.feedback_history.append(feedback)

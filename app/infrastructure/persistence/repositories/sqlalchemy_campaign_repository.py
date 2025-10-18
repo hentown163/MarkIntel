@@ -5,7 +5,7 @@ from datetime import date
 from sqlalchemy.orm import Session
 
 from app.domain.repositories.campaign_repository import CampaignRepository
-from app.domain.entities.campaign import Campaign, CampaignIdea, ChannelPlan, CampaignMetrics, CampaignStatus
+from app.domain.entities.campaign import Campaign, CampaignIdea, ChannelPlan, CampaignMetrics, CampaignStatus, CampaignFeedback
 from app.domain.value_objects import CampaignId, Money, DateRange
 from app.infrastructure.persistence.models.campaign_orm import CampaignORM, CampaignIdeaORM, ChannelPlanORM
 
@@ -105,6 +105,10 @@ class SQLAlchemyCampaignRepository(CampaignRepository):
         if orm.metrics_json:
             metrics = CampaignMetrics(**orm.metrics_json)
         
+        feedback_history = []
+        if orm.feedback_history:
+            feedback_history = [CampaignFeedback(**fb) for fb in orm.feedback_history]
+        
         return Campaign(
             id=CampaignId(orm.id),
             name=orm.name,
@@ -115,7 +119,9 @@ class SQLAlchemyCampaignRepository(CampaignRepository):
             channel_mix=channel_mix,
             total_budget=Money(orm.total_budget),
             expected_roi=orm.expected_roi,
-            metrics=metrics
+            metrics=metrics,
+            service_id=orm.service_id,
+            feedback_history=feedback_history
         )
     
     def _to_orm(self, campaign: Campaign) -> CampaignORM:
@@ -129,7 +135,9 @@ class SQLAlchemyCampaignRepository(CampaignRepository):
             end_date=campaign.date_range.end_date,
             total_budget=float(campaign.total_budget.amount),
             expected_roi=campaign.expected_roi,
-            metrics_json=self._metrics_to_json(campaign.metrics) if campaign.metrics else None
+            metrics_json=self._metrics_to_json(campaign.metrics) if campaign.metrics else None,
+            service_id=campaign.service_id,
+            feedback_history=self._feedback_to_json(campaign.feedback_history) if campaign.feedback_history else []
         )
         
         for idea in campaign.ideas:
@@ -167,6 +175,33 @@ class SQLAlchemyCampaignRepository(CampaignRepository):
         orm.total_budget = float(campaign.total_budget.amount)
         orm.expected_roi = campaign.expected_roi
         orm.metrics_json = self._metrics_to_json(campaign.metrics) if campaign.metrics else None
+        orm.service_id = campaign.service_id
+        orm.feedback_history = self._feedback_to_json(campaign.feedback_history) if campaign.feedback_history else []
+        
+        orm.ideas.clear()
+        for idea in campaign.ideas:
+            idea_orm = CampaignIdeaORM(
+                id=idea.id,
+                campaign_id=str(campaign.id),
+                theme=idea.theme,
+                core_message=idea.core_message,
+                target_segments=idea.target_segments,
+                competitive_angle=idea.competitive_angle
+            )
+            orm.ideas.append(idea_orm)
+        
+        orm.channel_mix.clear()
+        for channel in campaign.channel_mix:
+            ch_orm = ChannelPlanORM(
+                id=str(uuid.uuid4())[:8],
+                campaign_id=str(campaign.id),
+                channel=channel.channel,
+                content_type=channel.content_type,
+                frequency=channel.frequency,
+                budget_allocation=channel.budget_allocation,
+                success_metrics=channel.success_metrics
+            )
+            orm.channel_mix.append(ch_orm)
     
     def _metrics_to_json(self, metrics: CampaignMetrics) -> dict:
         """Convert metrics to JSON"""
@@ -175,3 +210,15 @@ class SQLAlchemyCampaignRepository(CampaignRepository):
             "leads": metrics.leads,
             "conversions": metrics.conversions
         }
+    
+    def _feedback_to_json(self, feedback_list: List[CampaignFeedback]) -> list:
+        """Convert feedback list to JSON"""
+        return [
+            {
+                "feedback_type": fb.feedback_type,
+                "target": fb.target,
+                "comment": fb.comment,
+                "timestamp": fb.timestamp
+            }
+            for fb in feedback_list
+        ]
