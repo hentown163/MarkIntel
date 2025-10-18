@@ -31,7 +31,7 @@ class Service:
         if not self.target_audience:
             raise ValidationError("Service must have target audience")
         if self.competitors is None:
-            self.competitors = []
+            object.__setattr__(self, 'competitors', [])
         if self.market_mentions < 0:
             raise ValidationError("Market mentions cannot be negative")
     
