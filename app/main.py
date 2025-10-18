@@ -19,12 +19,21 @@ from app.application.dtos.response.campaign_response import CampaignResponseDTO,
 from app.application.dtos.response.feedback_response import FeedbackResponseDTO
 
 from app.infrastructure.persistence.seed_data import seed_database
-from app.api.routes import agent
+from app.api.routes import agent, audit
+
+# Import ORM models to register them with SQLAlchemy
+from app.infrastructure.persistence.models.agent_decision_orm import (
+    AgentDecisionORM,
+    ExecutionTraceORM,
+    ReasoningStepORM
+)
 
 app = FastAPI(title="NexusPlanner API", version="2.0.0 - Agentic AI Edition")
 
 # Include agent routes
 app.include_router(agent.router)
+# Include audit routes for observability
+app.include_router(audit.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -53,6 +62,21 @@ def startup_event():
     crm_repo = get_crm_repository()
     vector_store = get_vector_store()
     
+    # Initialize agent observability logger with database persistence
+    if settings.enable_database_logging:
+        from app.infrastructure.observability.agent_logger import initialize_agent_logger_with_db
+        from app.infrastructure.persistence.repositories.agent_decision_repository import AgentDecisionRepository
+        
+        db_session = next(get_db())
+        try:
+            repo = AgentDecisionRepository(db_session)
+            initialize_agent_logger_with_db(repo, enable_database_logging=True)
+            print(f"Agent Observability: Database logging ENABLED (retention: {settings.agent_log_retention_days} days)")
+        finally:
+            db_session.close()
+    else:
+        print("Agent Observability: In-memory logging only")
+    
     print(f"NexusPlanner v{settings.app_version} - Agentic AI Edition started!")
     print(f"AI Generation: {'ENABLED' if settings.use_ai_generation else 'DISABLED (using rule-based)'}")
     print(f"RAG System: Initialized with {vector_store.get_stats()['total_documents']} documents")
@@ -74,7 +98,8 @@ def root():
             "market_intelligence": "/api/market-intelligence",
             "dashboard": "/api/dashboard/metrics",
             "agent": "/api/agent",
-            "agent_observability": "/api/agent/observability"
+            "agent_observability": "/api/agent/observability",
+            "audit_logs": "/api/audit"
         }
     }
 

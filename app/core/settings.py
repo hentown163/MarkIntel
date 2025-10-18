@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     
     use_ai_generation: bool = True
     
+    # Agent Observability Settings
+    enable_database_logging: bool = True
+    agent_log_retention_days: int = 90
+    
     cors_origins: list[str] = ["*"]
     
     class Config:

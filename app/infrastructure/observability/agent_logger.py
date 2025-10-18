@@ -1,91 +1,16 @@
 """Agent observability logger for tracking reasoning, decisions, and execution traces"""
 import logging
+import asyncio
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-from dataclasses import dataclass, field
-from enum import Enum
 import json
 
-
-class DecisionType(str, Enum):
-    """Types of agent decisions"""
-    CAMPAIGN_GENERATION = "campaign_generation"
-    CUSTOMER_TARGETING = "customer_targeting"
-    CHANNEL_SELECTION = "channel_selection"
-    CONTENT_OPTIMIZATION = "content_optimization"
-    BUDGET_ALLOCATION = "budget_allocation"
-
-
-class ReasoningStep(str, Enum):
-    """Steps in agent reasoning process"""
-    DATA_RETRIEVAL = "data_retrieval"
-    ANALYSIS = "analysis"
-    PLANNING = "planning"
-    EXECUTION = "execution"
-    EVALUATION = "evaluation"
-
-
-@dataclass
-class AgentDecision:
-    """Represents a single decision made by the agent"""
-    decision_id: str
-    timestamp: datetime
-    decision_type: DecisionType
-    reasoning_chain: List[str]
-    data_sources: List[str]
-    confidence_score: float
-    outcome: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    def to_dict(self) -> Dict:
-        """Convert decision to dictionary for logging"""
-        return {
-            "decision_id": self.decision_id,
-            "timestamp": self.timestamp.isoformat(),
-            "decision_type": self.decision_type.value,
-            "reasoning_chain": self.reasoning_chain,
-            "data_sources": self.data_sources,
-            "confidence_score": self.confidence_score,
-            "outcome": self.outcome,
-            "metadata": self.metadata
-        }
-
-
-@dataclass
-class ExecutionTrace:
-    """Tracks agent execution flow and performance"""
-    trace_id: str
-    start_time: datetime
-    end_time: Optional[datetime]
-    steps: List[Dict[str, Any]] = field(default_factory=list)
-    total_tokens_used: int = 0
-    total_api_calls: int = 0
-    success: bool = True
-    error_message: Optional[str] = None
-    
-    def add_step(self, step_name: str, step_type: ReasoningStep, duration_ms: float, metadata: Optional[Dict] = None):
-        """Add a step to the execution trace"""
-        self.steps.append({
-            "step_name": step_name,
-            "step_type": step_type.value,
-            "duration_ms": duration_ms,
-            "timestamp": datetime.now().isoformat(),
-            "metadata": metadata or {}
-        })
-    
-    def to_dict(self) -> Dict:
-        """Convert trace to dictionary for logging"""
-        return {
-            "trace_id": self.trace_id,
-            "start_time": self.start_time.isoformat(),
-            "end_time": self.end_time.isoformat() if self.end_time else None,
-            "total_duration_ms": (self.end_time - self.start_time).total_seconds() * 1000 if self.end_time else None,
-            "steps": self.steps,
-            "total_tokens_used": self.total_tokens_used,
-            "total_api_calls": self.total_api_calls,
-            "success": self.success,
-            "error_message": self.error_message
-        }
+from app.infrastructure.observability.models import (
+    AgentDecision,
+    ExecutionTrace,
+    ReasoningStep,
+    DecisionType
+)
 
 
 class AgentObservabilityLogger:
@@ -94,9 +19,16 @@ class AgentObservabilityLogger:
     
     This class provides comprehensive logging and monitoring capabilities
     for the agent's reasoning process, decisions, and execution traces.
+    
+    Supports both in-memory and database persistence for compliance and audit trails.
     """
     
-    def __init__(self, log_level: int = logging.INFO):
+    def __init__(
+        self,
+        log_level: int = logging.INFO,
+        enable_database_logging: bool = False,
+        db_repository=None
+    ):
         self.logger = logging.getLogger("nexus_agent")
         self.logger.setLevel(log_level)
         
@@ -109,18 +41,45 @@ class AgentObservabilityLogger:
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
         
+        # In-memory storage (always active for quick access)
         self.decisions: List[AgentDecision] = []
         self.execution_traces: List[ExecutionTrace] = []
+        
+        # Database persistence (opt-in via feature flag)
+        self.enable_database_logging = enable_database_logging
+        self.db_repository = db_repository
+        
+        if self.enable_database_logging and not self.db_repository:
+            self.logger.warning(
+                "Database logging enabled but no repository provided. "
+                "Falling back to in-memory only."
+            )
+            self.enable_database_logging = False
     
     def log_decision(self, decision: AgentDecision):
-        """Log an agent decision with full reasoning chain"""
+        """
+        Log an agent decision with full reasoning chain
+        
+        Stores in-memory and optionally persists to database for audit trail
+        """
+        # In-memory storage
         self.decisions.append(decision)
+        
+        # Console logging
         self.logger.info(
             f"Agent Decision | Type: {decision.decision_type.value} | "
             f"Confidence: {decision.confidence_score:.2%} | "
             f"Reasoning Steps: {len(decision.reasoning_chain)}"
         )
         self.logger.debug(f"Decision Details: {json.dumps(decision.to_dict(), indent=2)}")
+        
+        # Database persistence (async, non-blocking)
+        if self.enable_database_logging and self.db_repository:
+            try:
+                asyncio.create_task(self._persist_decision_async(decision))
+            except RuntimeError:
+                # No event loop running, do sync persistence
+                self._persist_decision_sync(decision)
     
     def log_reasoning_step(self, trace_id: str, step_name: str, reasoning: str, data_used: List[str]):
         """Log a single reasoning step in the agent's thought process"""
@@ -130,19 +89,24 @@ class AgentObservabilityLogger:
         self.logger.debug(f"Reasoning: {reasoning}")
         self.logger.debug(f"Data Sources: {', '.join(data_used)}")
     
-    def start_execution_trace(self, trace_id: str) -> ExecutionTrace:
+    def start_execution_trace(self, trace_id: str, session_id: Optional[str] = None) -> ExecutionTrace:
         """Start a new execution trace"""
         trace = ExecutionTrace(
             trace_id=trace_id,
             start_time=datetime.now(),
-            end_time=None
+            end_time=None,
+            session_id=session_id
         )
         self.execution_traces.append(trace)
         self.logger.info(f"Started execution trace: {trace_id}")
         return trace
     
     def end_execution_trace(self, trace_id: str, success: bool = True, error_message: Optional[str] = None):
-        """End an execution trace"""
+        """
+        End an execution trace
+        
+        Persists to database if enabled for audit and performance tracking
+        """
         trace = next((t for t in self.execution_traces if t.trace_id == trace_id), None)
         if trace:
             trace.end_time = datetime.now()
@@ -156,15 +120,53 @@ class AgentObservabilityLogger:
                 f"Steps: {len(trace.steps)} | "
                 f"Success: {success}"
             )
+            
+            # Database persistence (async, non-blocking)
+            if self.enable_database_logging and self.db_repository:
+                try:
+                    asyncio.create_task(self._persist_trace_async(trace))
+                except RuntimeError:
+                    # No event loop running, do sync persistence
+                    self._persist_trace_sync(trace)
     
-    def get_decision_history(self, decision_type: Optional[DecisionType] = None) -> List[AgentDecision]:
-        """Retrieve decision history, optionally filtered by type"""
+    def get_decision_history(
+        self,
+        decision_type: Optional[DecisionType] = None,
+        limit: int = 100,
+        from_database: bool = False
+    ) -> List[AgentDecision]:
+        """
+        Retrieve decision history, optionally filtered by type
+        
+        Args:
+            decision_type: Filter by decision type
+            limit: Maximum number of decisions to return
+            from_database: If True and DB logging enabled, query from database instead of memory
+        """
+        if from_database and self.enable_database_logging and self.db_repository:
+            if decision_type:
+                return self.db_repository.find_decisions_by_type(decision_type, limit=limit)
+            else:
+                return self.db_repository.find_recent_decisions(limit=limit)
+        
+        # In-memory fallback
+        decisions = self.decisions
         if decision_type:
-            return [d for d in self.decisions if d.decision_type == decision_type]
-        return self.decisions
+            decisions = [d for d in decisions if d.decision_type == decision_type]
+        return decisions[-limit:]
     
-    def get_execution_metrics(self) -> Dict[str, Any]:
-        """Get aggregate execution metrics"""
+    def get_execution_metrics(self, from_database: bool = False, days: int = 7) -> Dict[str, Any]:
+        """
+        Get aggregate execution metrics
+        
+        Args:
+            from_database: If True and DB logging enabled, query from database
+            days: Number of days to include in stats (for database queries)
+        """
+        if from_database and self.enable_database_logging and self.db_repository:
+            return self.db_repository.get_trace_stats(days=days)
+        
+        # In-memory calculation
         if not self.execution_traces:
             return {}
         
@@ -191,12 +193,54 @@ class AgentObservabilityLogger:
             "execution_traces": [t.to_dict() for t in self.execution_traces],
             "metrics": self.get_execution_metrics()
         }
+    
+    async def _persist_decision_async(self, decision: AgentDecision):
+        """Async persistence of decision to database"""
+        try:
+            self.db_repository.save_decision(decision)
+        except Exception as e:
+            self.logger.error(f"Failed to persist decision to database: {e}")
+    
+    async def _persist_trace_async(self, trace: ExecutionTrace):
+        """Async persistence of trace to database"""
+        try:
+            self.db_repository.save_trace(trace)
+        except Exception as e:
+            self.logger.error(f"Failed to persist trace to database: {e}")
+    
+    def _persist_decision_sync(self, decision: AgentDecision):
+        """Sync persistence of decision to database"""
+        try:
+            self.db_repository.save_decision(decision)
+        except Exception as e:
+            self.logger.error(f"Failed to persist decision to database: {e}")
+    
+    def _persist_trace_sync(self, trace: ExecutionTrace):
+        """Sync persistence of trace to database"""
+        try:
+            self.db_repository.save_trace(trace)
+        except Exception as e:
+            self.logger.error(f"Failed to persist trace to database: {e}")
 
 
-# Global singleton instance
+# Global singleton instance (in-memory only by default)
 _agent_logger = AgentObservabilityLogger()
 
 
 def get_agent_logger() -> AgentObservabilityLogger:
     """Get the global agent logger instance"""
+    return _agent_logger
+
+
+def initialize_agent_logger_with_db(db_repository, enable_database_logging: bool = True):
+    """
+    Initialize the global agent logger with database persistence
+    
+    Call this at application startup to enable database logging
+    """
+    global _agent_logger
+    _agent_logger = AgentObservabilityLogger(
+        enable_database_logging=enable_database_logging,
+        db_repository=db_repository
+    )
     return _agent_logger
