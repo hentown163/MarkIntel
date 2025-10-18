@@ -41,12 +41,18 @@ The system adheres to **Clean Architecture** principles, incorporating **Domain-
 
 ### Feature Specifications
 - **AI-Powered Campaign Generation:** Generates campaign ideas and strategies using OpenAI GPT-5.
-- **Campaign Management:** View, filter, and interact with generated campaigns. Future features include editing, duplication, and performance tracking.
+- **Campaign Management:** View, filter, and interact with generated campaigns.
+  - **Search:** Real-time campaign search by name, theme, or channel (implemented October 2025)
+  - **Delete:** Remove campaigns with confirmation dialog (implemented October 2025)
+  - **Status Filtering:** Filter by All, Active, Draft, and Completed statuses
 - **Market Intelligence:** Tracks and displays market signals to inform campaign strategies.
 - **Service Catalog:** Manages and displays available services with associated metrics.
-- **Regeneration and Feedback:** Interactive UI elements to regenerate campaign ideas/channels and provide feedback.
-- **Feedback History:** Campaign API responses now include full feedback history with timestamps, allowing the frontend to display all user feedback on campaigns.
-- **Search and Filtering:** Planned functionality for searching campaigns and filtering market intelligence/services.
+- **Regeneration and Feedback:** Fully functional interactive features (implemented October 2025)
+  - **Regenerate Campaign Ideas:** Uses AI to generate fresh campaign ideas while preserving channel strategies
+  - **Regenerate Channel Strategies:** Uses AI to optimize the channel mix while preserving campaign ideas
+  - **Like/Dislike Feedback:** Allows users to provide feedback on campaigns with full history tracking
+  - **Real-time Updates:** Modal displays fresh data immediately after regeneration without requiring reload
+- **State Synchronization:** Advanced React state management ensures UI stays synchronized with backend data across all operations.
 
 ### System Design Choices
 - **Repository Pattern:** Abstracted data access for flexibility.
