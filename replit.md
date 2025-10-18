@@ -1,12 +1,51 @@
-# NexusPlanner - AI-Powered Marketing Campaign Generator
+# NexusPlanner - Enterprise GenAI Agent Platform
 
 ## Overview
-NexusPlanner is an AI-powered platform designed to revolutionize marketing campaign generation. It provides a comprehensive solution for businesses to rapidly create, manage, and optimize marketing campaigns using advanced AI capabilities. The project aims to streamline the campaign ideation process, integrate market intelligence, and offer a service catalog to enhance strategic marketing efforts. NexusPlanner focuses on delivering high-quality, data-driven campaign strategies to drive business growth and improve market responsiveness.
+NexusPlanner is an **enterprise-grade GenAI Agent platform** that autonomously plans, generates, and optimizes marketing campaigns using advanced AI capabilities. Unlike traditional Gen AI tools, NexusPlanner features **autonomous reasoning**, **RAG (Retrieval-Augmented Generation)**, **observability**, and **closed-loop learning** to deliver revenue-aware, data-driven campaign strategies.
+
+**Transformation (October 2025):** Evolved from a simple GenAI campaign generator into a full **Agentic AI system** capable of:
+- **Autonomous Multi-Step Planning**: The agent analyzes objectives and creates execution plans without explicit instructions
+- **RAG-Powered Intelligence**: Retrieves relevant customer data to inform campaign decisions
+- **Observability & Reasoning Trails**: Complete visibility into agent decisions and reasoning process
+- **Closed-Loop Learning**: Learns from campaign outcomes to improve future recommendations
+- **Enterprise Integration Ready**: Built to connect with CRM systems (HubSpot, Salesforce)
 
 ## User Preferences
 **Communication Style:** Simple, everyday language - avoid technical jargon when talking to users.
 
 **Development Approach:** Fast iteration with working features first, then refinement.
+
+## Agentic AI Capabilities (New - October 2025)
+
+### Autonomous Agent Features
+- **Reasoning Engine**: Multi-step task planning with autonomous decision-making
+- **RAG System**: Vector store with OpenAI embeddings for knowledge retrieval
+- **CRM Integration**: Mock CRM repository with 7 enterprise customer profiles (ready for HubSpot/Salesforce)
+- **Observability Layer**: Complete logging of agent decisions, reasoning chains, and execution traces
+- **Closed-Loop Learning**: Campaign outcome evaluation for continuous improvement
+
+### Agent Architecture
+1. **Reasoning Engine** (`app/domain/services/agent/reasoning_engine.py`)
+   - Creates multi-step execution plans
+   - Analyzes business objectives
+   - Retrieves relevant CRM data using RAG
+   - Makes autonomous decisions with confidence scoring
+   
+2. **RAG Vector Store** (`app/infrastructure/rag/vector_store.py`)
+   - OpenAI embedding generation (text-embedding-3-small)
+   - Cosine similarity-based retrieval
+   - Metadata filtering for targeted search
+   
+3. **Observability Logger** (`app/infrastructure/observability/agent_logger.py`)
+   - Decision tracking with reasoning chains
+   - Execution traces with performance metrics
+   - Export capabilities for analysis and auditing
+   
+4. **Mock CRM Repository** (`app/infrastructure/rag/mock_crm_repository.py`)
+   - 7 realistic customer profiles across segments (Enterprise, Mid-Market, SMB, Startup)
+   - ICP (Ideal Customer Profile) scoring
+   - Engagement level tracking
+   - Ready to replace with real CRM API integration
 
 ## System Architecture
 
@@ -40,19 +79,30 @@ The system adheres to **Clean Architecture** principles, incorporating **Domain-
     - **API Layer:** FastAPI routes exposing use cases and defining request/response schemas.
 
 ### Feature Specifications
+
+**Core GenAI Features:**
 - **AI-Powered Campaign Generation:** Generates campaign ideas and strategies using OpenAI GPT-5.
 - **Campaign Management:** View, filter, and interact with generated campaigns.
-  - **Search:** Real-time campaign search by name, theme, or channel (implemented October 2025)
-  - **Delete:** Remove campaigns with confirmation dialog (implemented October 2025)
+  - **Search:** Real-time campaign search by name, theme, or channel
+  - **Delete:** Remove campaigns with confirmation dialog
   - **Status Filtering:** Filter by All, Active, Draft, and Completed statuses
-- **Market Intelligence:** Tracks and displays market signals to inform campaign strategies.
-- **Service Catalog:** Manages and displays available services with associated metrics.
-- **Regeneration and Feedback:** Fully functional interactive features (implemented October 2025)
+- **Regeneration and Feedback:** Fully functional interactive features
   - **Regenerate Campaign Ideas:** Uses AI to generate fresh campaign ideas while preserving channel strategies
   - **Regenerate Channel Strategies:** Uses AI to optimize the channel mix while preserving campaign ideas
   - **Like/Dislike Feedback:** Allows users to provide feedback on campaigns with full history tracking
   - **Real-time Updates:** Modal displays fresh data immediately after regeneration without requiring reload
-- **State Synchronization:** Advanced React state management ensures UI stays synchronized with backend data across all operations.
+
+**Agentic AI Features (New):**
+- **Autonomous Planning** (`POST /api/agent/plan`): Agent creates multi-step execution plans based on business objectives
+- **Campaign Evaluation** (`POST /api/agent/evaluate`): Closed-loop learning from campaign outcomes
+- **Observability APIs:**
+  - `GET /api/agent/observability/decisions` - View all agent decisions with reasoning chains
+  - `GET /api/agent/observability/metrics` - Agent performance metrics (execution time, success rate, token usage)
+  - `GET /api/agent/observability/export` - Export complete observability data for analysis
+- **RAG Statistics** (`GET /api/agent/rag/stats`): Vector store metrics and document counts
+- **CRM Statistics** (`GET /api/agent/crm/stats`): Customer data insights and segmentation breakdown
+- **Market Intelligence:** Tracks and displays market signals to inform campaign strategies.
+- **Service Catalog:** Manages and displays available services with associated metrics.
 
 ### System Design Choices
 - **Repository Pattern:** Abstracted data access for flexibility.
@@ -64,10 +114,27 @@ The system adheres to **Clean Architecture** principles, incorporating **Domain-
 
 ## External Dependencies
 
-- **OpenAI GPT-5:** Integrated via `gpt-4o` model for AI-powered campaign ideation and content generation.
-- **PostgreSQL:** Primary database, managed by Replit (Neon-backed), accessed via SQLAlchemy ORM.
-- **Axios:** Frontend HTTP client for API communication.
-- **Lucide React:** Lightweight icon library for the frontend.
-- **Vite:** Frontend build tool.
-- **Uvicorn:** ASGI server for FastAPI.
-- **Psycopg2-binary:** PostgreSQL adapter for Python.
+**AI & ML:**
+- **OpenAI GPT-4o:** Campaign ideation, content generation, and agent reasoning
+- **OpenAI Embeddings (text-embedding-3-small):** RAG vector embeddings for knowledge retrieval
+- **scikit-learn:** Cosine similarity calculations for RAG retrieval
+- **NumPy:** Vector operations and numerical computations
+
+**Backend:**
+- **FastAPI 0.115.0:** High-performance API framework
+- **PostgreSQL:** Primary database (Neon-backed via Replit)
+- **SQLAlchemy 2.x:** ORM for database interactions
+- **Pydantic 2.9.2:** Data validation and settings management
+- **Uvicorn:** ASGI server
+- **python-jose[cryptography]:** JWT authentication (ready for auth implementation)
+- **passlib[bcrypt]:** Password hashing (ready for auth implementation)
+
+**Frontend:**
+- **React 19.1.1 + Vite:** Modern frontend development
+- **Axios 1.12.2:** HTTP client for API communication
+- **Lucide React:** Lightweight icon library
+
+**Future Integrations (Prepared):**
+- **HubSpot CRM:** Customer data integration (mock data currently active)
+- **Salesforce:** Alternative CRM integration option
+- **Customer Data Platforms (CDP):** For unified behavioral signals

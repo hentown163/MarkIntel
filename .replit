@@ -3,7 +3,7 @@ modules = ["python-3.11", "nodejs-20", "web", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["libxcrypt"]
+packages = ["bash", "glibcLocales", "libxcrypt"]
 
 [unitTest]
 language = "python3"
@@ -69,6 +69,10 @@ externalPort = 8000
 [[ports]]
 localPort = 38031
 externalPort = 3001
+
+[[ports]]
+localPort = 39825
+externalPort = 3002
 
 [[ports]]
 localPort = 41517

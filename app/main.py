@@ -19,8 +19,12 @@ from app.application.dtos.response.campaign_response import CampaignResponseDTO,
 from app.application.dtos.response.feedback_response import FeedbackResponseDTO
 
 from app.infrastructure.persistence.seed_data import seed_database
+from app.api.routes import agent
 
-app = FastAPI(title="NexusPlanner API", version="2.0.0")
+app = FastAPI(title="NexusPlanner API", version="2.0.0 - Agentic AI Edition")
+
+# Include agent routes
+app.include_router(agent.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,8 +47,16 @@ def startup_event():
     finally:
         db.close()
     
-    print(f"NexusPlanner v{settings.app_version} started!")
+    # Initialize RAG and agent systems
+    from app.infrastructure.rag.mock_crm_repository import get_crm_repository
+    from app.infrastructure.rag.vector_store import get_vector_store
+    crm_repo = get_crm_repository()
+    vector_store = get_vector_store()
+    
+    print(f"NexusPlanner v{settings.app_version} - Agentic AI Edition started!")
     print(f"AI Generation: {'ENABLED' if settings.use_ai_generation else 'DISABLED (using rule-based)'}")
+    print(f"RAG System: Initialized with {vector_store.get_stats()['total_documents']} documents")
+    print(f"CRM Data: {crm_repo.get_stats()['total_customers']} customers indexed")
 
 
 @app.get("/")
@@ -54,11 +66,15 @@ def root():
         "name": settings.app_name,
         "version": settings.app_version,
         "ai_enabled": settings.use_ai_generation,
+        "agent_enabled": True,
+        "rag_enabled": True,
         "endpoints": {
             "campaigns": "/api/campaigns",
             "services": "/api/services",
             "market_intelligence": "/api/market-intelligence",
-            "dashboard": "/api/dashboard/metrics"
+            "dashboard": "/api/dashboard/metrics",
+            "agent": "/api/agent",
+            "agent_observability": "/api/agent/observability"
         }
     }
 
