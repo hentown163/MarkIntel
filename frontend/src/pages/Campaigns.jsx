@@ -10,11 +10,17 @@ export default function Campaigns() {
   const [filter, setFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { campaigns, loading, error, reload } = useCampaigns();
 
-  const filteredCampaigns = filter === 'all' 
-    ? campaigns 
-    : campaigns.filter(c => c.status === filter);
+  const filteredCampaigns = campaigns.filter(campaign => {
+    const matchesFilter = filter === 'all' || campaign.status === filter;
+    const matchesSearch = !searchQuery || 
+      campaign.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      campaign.theme?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      campaign.channel_mix?.some(ch => ch.channel?.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesFilter && matchesSearch;
+  });
 
   const getCountByStatus = (status) => {
     return campaigns.filter(c => c.status === status).length;
@@ -22,6 +28,13 @@ export default function Campaigns() {
 
   const handleCampaignClick = (campaign) => {
     setSelectedCampaign(campaign);
+  };
+
+  const handleCampaignUpdate = async (updatedCampaign) => {
+    await reload();
+    if (updatedCampaign) {
+      setSelectedCampaign(updatedCampaign);
+    }
   };
 
   if (error) {
@@ -51,7 +64,12 @@ export default function Campaigns() {
       <div className="campaigns-controls">
         <div className="search-bar">
           <Search size={18} />
-          <input type="text" placeholder="Search campaigns by title, theme, or channel..." />
+          <input 
+            type="text" 
+            placeholder="Search campaigns by title, theme, or channel..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
         <div className="filter-buttons">
           <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>
@@ -93,7 +111,7 @@ export default function Campaigns() {
         campaign={selectedCampaign}
         isOpen={!!selectedCampaign}
         onClose={() => setSelectedCampaign(null)}
-        onUpdate={reload}
+        onUpdate={handleCampaignUpdate}
       />
     </div>
   );

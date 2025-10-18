@@ -1,46 +1,103 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { X, RefreshCw, ThumbsUp, ThumbsDown, Calendar, DollarSign, TrendingUp, Target, Lightbulb } from 'lucide-react';
+import { X, RefreshCw, ThumbsUp, ThumbsDown, Calendar, DollarSign, TrendingUp, Target, Lightbulb, Edit, Trash2 } from 'lucide-react';
 import { campaignsAPI } from '../api/client';
 import './CampaignModal.css';
 
 export default function CampaignDetailModal({ campaign, isOpen, onClose, onUpdate }) {
   const [regenerating, setRegenerating] = useState(null);
   const [feedback, setFeedback] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [currentCampaign, setCurrentCampaign] = useState(campaign);
+
+  useEffect(() => {
+    if (campaign) {
+      setCurrentCampaign(campaign);
+    }
+  }, [campaign]);
 
   if (!isOpen || !campaign) return null;
 
   const handleRegenerateIdeas = async () => {
-    setRegenerating('ideas');
-    setTimeout(() => {
+    try {
+      setRegenerating('ideas');
+      const response = await campaignsAPI.regenerateIdeas(campaign.id);
+      setCurrentCampaign(response.data);
+      if (onUpdate) {
+        await onUpdate(response.data);
+      }
+      alert('Campaign ideas regenerated successfully!');
+    } catch (error) {
+      console.error('Error regenerating ideas:', error);
+      alert('Failed to regenerate ideas. Please try again.');
+    } finally {
       setRegenerating(null);
-      alert('Campaign ideas regenerated! (In a full implementation, this would call the API)');
-    }, 2000);
+    }
   };
 
   const handleRegenerateChannels = async () => {
-    setRegenerating('channels');
-    setTimeout(() => {
+    try {
+      setRegenerating('channels');
+      const response = await campaignsAPI.regenerateStrategies(campaign.id);
+      setCurrentCampaign(response.data);
+      if (onUpdate) {
+        await onUpdate(response.data);
+      }
+      alert('Channel strategies regenerated successfully!');
+    } catch (error) {
+      console.error('Error regenerating strategies:', error);
+      alert('Failed to regenerate channel strategies. Please try again.');
+    } finally {
       setRegenerating(null);
-      alert('Channel mix regenerated! (In a full implementation, this would call the API)');
-    }, 2000);
+    }
   };
 
-  const handleFeedback = (type) => {
-    setFeedback(type);
-    setTimeout(() => {
+  const handleFeedback = async (type) => {
+    try {
+      setFeedback(type);
+      await campaignsAPI.submitFeedback(campaign.id, {
+        feedback_type: type,
+        comment: `User ${type === 'positive' ? 'liked' : 'disliked'} this campaign`
+      });
       alert(`Thank you for your ${type} feedback! This helps improve future campaigns.`);
-      setFeedback(null);
-    }, 1500);
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      alert('Failed to submit feedback. Please try again.');
+    } finally {
+      setTimeout(() => setFeedback(null), 1500);
+    }
   };
+
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete "${displayCampaign.name}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      setIsDeleting(true);
+      await campaignsAPI.delete(displayCampaign.id);
+      alert('Campaign deleted successfully!');
+      if (onUpdate) {
+        await onUpdate();
+      }
+      onClose();
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      alert('Failed to delete campaign. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const displayCampaign = currentCampaign || campaign;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content campaign-detail-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px' }}>
         <div className="modal-header">
           <div className="modal-title">
-            <h2>{campaign.name}</h2>
-            <span className={`status-badge ${campaign.status}`} style={{ marginLeft: '1rem' }}>{campaign.status}</span>
+            <h2>{displayCampaign.name}</h2>
+            <span className={`status-badge ${displayCampaign.status}`} style={{ marginLeft: '1rem' }}>{displayCampaign.status}</span>
           </div>
           <button className="modal-close" onClick={onClose}>
             <X size={20} />
@@ -98,7 +155,7 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose, onUpdat
               border: '1px solid #2a3544'
             }}>
               <p style={{ fontSize: '1.2rem', fontWeight: '600', color: '#fff', marginBottom: '0.5rem' }}>
-                {campaign.theme}
+                {displayCampaign.theme}
               </p>
             </div>
           </div>
@@ -137,7 +194,7 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose, onUpdat
               display: 'grid',
               gap: '1rem'
             }}>
-              {campaign.ideas && campaign.ideas.map((idea, idx) => (
+              {displayCampaign.ideas && displayCampaign.ideas.map((idea, idx) => (
                 <div key={idx} style={{ 
                   padding: '1rem',
                   backgroundColor: '#0f172a',
@@ -198,7 +255,7 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose, onUpdat
               gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
               gap: '1rem'
             }}>
-              {campaign.channel_mix && campaign.channel_mix.map((channel, idx) => (
+              {displayCampaign.channel_mix && displayCampaign.channel_mix.map((channel, idx) => (
                 <div key={idx} style={{ 
                   padding: '1rem',
                   backgroundColor: '#1a2332',
@@ -238,7 +295,7 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose, onUpdat
               }}>
                 <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Duration</p>
                 <p style={{ color: '#fff', fontSize: '1rem' }}>
-                  {campaign.start_date} - {campaign.end_date}
+                  {displayCampaign.start_date} - {displayCampaign.end_date}
                 </p>
               </div>
               <div style={{ 
@@ -250,7 +307,7 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose, onUpdat
                 <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Budget</p>
                 <p style={{ color: '#fff', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                   <DollarSign size={16} />
-                  {campaign.total_budget || 'TBD'}
+                  {displayCampaign.total_budget || 'TBD'}
                 </p>
               </div>
               <div style={{ 
@@ -261,14 +318,29 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose, onUpdat
               }}>
                 <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Expected ROI</p>
                 <p style={{ color: '#22c55e', fontSize: '1rem', fontWeight: '600' }}>
-                  {campaign.expected_roi ? `${campaign.expected_roi}%` : 'TBD'}
+                  {displayCampaign.expected_roi ? `${displayCampaign.expected_roi}%` : 'TBD'}
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="modal-footer">
+        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <button 
+            className="btn-secondary" 
+            onClick={handleDelete}
+            disabled={isDeleting}
+            style={{ 
+              background: '#ef4444',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              opacity: isDeleting ? 0.6 : 1
+            }}
+          >
+            <Trash2 size={16} />
+            {isDeleting ? 'Deleting...' : 'Delete Campaign'}
+          </button>
           <button className="btn-secondary" onClick={onClose}>
             Close
           </button>
