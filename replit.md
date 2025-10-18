@@ -45,6 +45,7 @@ The system adheres to **Clean Architecture** principles, incorporating **Domain-
 - **Market Intelligence:** Tracks and displays market signals to inform campaign strategies.
 - **Service Catalog:** Manages and displays available services with associated metrics.
 - **Regeneration and Feedback:** Interactive UI elements to regenerate campaign ideas/channels and provide feedback.
+- **Feedback History:** Campaign API responses now include full feedback history with timestamps, allowing the frontend to display all user feedback on campaigns.
 - **Search and Filtering:** Planned functionality for searching campaigns and filtering market intelligence/services.
 
 ### System Design Choices
