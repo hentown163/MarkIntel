@@ -29,6 +29,14 @@ class CampaignMetricsDTO(BaseModel):
     conversions: Optional[str] = None
 
 
+class FeedbackHistoryDTO(BaseModel):
+    """Feedback history item DTO"""
+    feedback_type: str
+    target: str
+    comment: Optional[str] = None
+    timestamp: Optional[str] = None
+
+
 class CampaignResponseDTO(BaseModel):
     """
     Campaign response DTO
@@ -46,6 +54,7 @@ class CampaignResponseDTO(BaseModel):
     total_budget: float
     expected_roi: float
     metrics: Optional[CampaignMetricsDTO] = None
+    feedback_history: List[FeedbackHistoryDTO] = []
     
     class Config:
         from_attributes = True
