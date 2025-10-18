@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.7
     llm_max_tokens: int = 2000
     
-    use_ai_generation: bool = False
+    use_ai_generation: bool = True
     
     cors_origins: list[str] = ["*"]
     
