@@ -37,9 +37,13 @@ NexusPlanner is an **enterprise-grade GenAI Agent platform** that autonomously p
    - Metadata filtering for targeted search
    
 3. **Observability Logger** (`app/infrastructure/observability/agent_logger.py`)
-   - Decision tracking with reasoning chains
-   - Execution traces with performance metrics
-   - Export capabilities for analysis and auditing
+   - **Production-Ready Database Logging** (October 2025)
+   - Decision tracking with full reasoning chains
+   - Execution traces with step-by-step performance metrics
+   - Dual-mode: in-memory + PostgreSQL persistence
+   - Async logging to avoid blocking agent operations
+   - Configurable via feature flags and retention policies
+   - Export capabilities for compliance and analysis
    
 4. **Mock CRM Repository** (`app/infrastructure/rag/mock_crm_repository.py`)
    - 7 realistic customer profiles across segments (Enterprise, Mid-Market, SMB, Startup)
@@ -104,12 +108,32 @@ The system adheres to **Clean Architecture** principles, incorporating **Domain-
 - **Market Intelligence:** Tracks and displays market signals to inform campaign strategies.
 - **Service Catalog:** Manages and displays available services with associated metrics.
 
+**Enterprise Audit & Compliance Features (Production-Ready - October 2025):**
+- **Database-Persisted Audit Logs**: All agent decisions and execution traces saved to PostgreSQL for compliance
+  - Tables: `agent_decisions`, `execution_traces`, `reasoning_steps`
+  - Indexed by timestamp, session_id, decision_type for efficient querying
+  - JSONB columns for flexible metadata storage
+- **Audit Trail APIs** (`/api/audit`):
+  - `GET /api/audit/decisions/recent` - Recent agent decisions with reasoning chains
+  - `GET /api/audit/decisions/by-type/{type}` - Filter decisions by type
+  - `GET /api/audit/decisions/by-session/{session_id}` - Session-specific audit trail
+  - `GET /api/audit/traces/recent` - Execution traces with performance metrics
+  - `GET /api/audit/stats/decisions` - Decision statistics and trends
+  - `GET /api/audit/stats/traces` - Performance analytics
+- **Retention Policies**: Configurable data retention (default: 90 days)
+  - `POST /api/audit/cleanup/decisions` - Remove old decisions per policy
+  - `POST /api/audit/cleanup/traces` - Remove old traces per policy
+- **Feature Flags**: Enable/disable database logging via configuration
+  - `enable_database_logging` setting (default: True)
+  - Async persistence to avoid blocking agent execution
+  - Dual-mode: in-memory + database for reliability
+
 ### System Design Choices
 - **Repository Pattern:** Abstracted data access for flexibility.
 - **Dependency Injection:** Used for managing and providing dependencies throughout the backend.
 - **Adapter Pattern:** Isolates external services like OpenAI from core domain logic.
 - **Value Objects:** Ensures type safety and immutability for critical domain concepts (e.g., Money, DateRange).
-- **Database Schema:** PostgreSQL with specific tables for `services`, `market_signals`, `campaigns`, `campaign_ideas`, and `channel_plans`, designed for data integrity and performance.
+- **Database Schema:** PostgreSQL with tables for `services`, `market_signals`, `campaigns`, `campaign_ideas`, `channel_plans`, `agent_decisions`, `execution_traces`, and `reasoning_steps`, designed for data integrity, performance, and compliance auditing.
 - **CORS Configuration:** Setup for development with plans for production-grade security.
 
 ## External Dependencies
