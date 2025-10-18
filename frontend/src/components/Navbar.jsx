@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, Target, Server, Sparkles } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Target, Server, Sparkles, Brain } from 'lucide-react';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -10,6 +10,7 @@ export default function Navbar() {
     { path: '/market-intelligence', icon: TrendingUp, label: 'Market Intelligence' },
     { path: '/campaigns', icon: Target, label: 'Campaigns' },
     { path: '/services', icon: Server, label: 'Services' },
+    { path: '/observability', icon: Brain, label: 'Observability' },
   ];
 
   return (
