@@ -2,13 +2,14 @@
 from typing import List
 from datetime import date as Date
 
-from app.domain.entities.campaign import Campaign, CampaignIdea, ChannelPlan, CampaignMetrics
+from app.domain.entities.campaign import Campaign, CampaignIdea, ChannelPlan, CampaignMetrics, CampaignFeedback
 from app.domain.value_objects import CampaignId, Money, DateRange
 from app.application.dtos.response.campaign_response import (
     CampaignResponseDTO,
     CampaignIdeaDTO,
     ChannelPlanDTO,
-    CampaignMetricsDTO
+    CampaignMetricsDTO,
+    FeedbackHistoryDTO
 )
 
 
@@ -33,7 +34,8 @@ class CampaignMapper:
             channel_mix=[CampaignMapper._channel_to_dto(ch) for ch in campaign.channel_mix],
             total_budget=float(campaign.total_budget.amount),
             expected_roi=campaign.expected_roi,
-            metrics=CampaignMapper._metrics_to_dto(campaign.metrics) if campaign.metrics else None
+            metrics=CampaignMapper._metrics_to_dto(campaign.metrics) if campaign.metrics else None,
+            feedback_history=[CampaignMapper._feedback_to_dto(fb) for fb in campaign.feedback_history]
         )
     
     @staticmethod
@@ -65,4 +67,14 @@ class CampaignMapper:
             engagement=metrics.engagement,
             leads=metrics.leads,
             conversions=metrics.conversions
+        )
+    
+    @staticmethod
+    def _feedback_to_dto(feedback: CampaignFeedback) -> FeedbackHistoryDTO:
+        """Convert CampaignFeedback to DTO"""
+        return FeedbackHistoryDTO(
+            feedback_type=feedback.feedback_type,
+            target=feedback.target,
+            comment=feedback.comment,
+            timestamp=feedback.timestamp
         )
