@@ -1,5 +1,5 @@
 entrypoint = "main.py"
-modules = ["python-3.11", "nodejs-20", "web"]
+modules = ["python-3.11", "nodejs-20", "web", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
@@ -75,5 +75,5 @@ localPort = 41517
 externalPort = 3000
 
 [[ports]]
-localPort = 44237
+localPort = 43645
 externalPort = 3002
