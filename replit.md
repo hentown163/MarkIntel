@@ -58,6 +58,12 @@ The frontend is built with React, focusing on an interactive and responsive user
 - **Real-Time Progress Indicator:** A 5-step visual guide for AI campaign generation.
 - **Interactive Campaign Details:** Modals for detailed campaign views, including regeneration and feedback options.
 - **Status Filtering:** Campaigns can be filtered by 'All', 'Active', 'Draft', and 'Completed'.
+- **Observability Dashboard:** (NEW - October 2025) Complete visibility into agent reasoning and decision-making
+  - **Agent Decisions Tab:** View all agent decisions with confidence scores, reasoning chains, and data sources
+  - **Execution Traces Tab:** Monitor step-by-step execution traces with performance metrics
+  - **Performance Tab:** Track overall statistics, success rates, and decision patterns
+  - **Real-time Filtering:** Search and filter decisions by type, status, and session
+  - **Interactive Details View:** Click any decision or trace to see full details including reasoning steps
 - **Dark Theme:** A responsive design with a default dark theme for improved user experience.
 - **Styling:** Pure CSS with CSS Custom Properties for a clean and maintainable design.
 - **State Management:** Utilizes custom React hooks for localized and efficient state management.

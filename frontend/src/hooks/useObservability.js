@@ -31,7 +31,7 @@ export default function useObservability() {
       const combinedStats = {
         total_decisions: decisionStatsRes.data.total_decisions,
         total_traces: traceStatsRes.data.total_traces,
-        success_rate: traceStatsRes.data.success_rate?.toFixed(1) || 0,
+        success_rate: traceStatsRes.data.success_rate ? (traceStatsRes.data.success_rate * 100).toFixed(1) : 0,
         avg_confidence: decisionStatsRes.data.average_confidence,
         avg_duration: traceStatsRes.data.average_duration_ms?.toFixed(0) || 0,
         by_type: decisionStatsRes.data.by_type || {}

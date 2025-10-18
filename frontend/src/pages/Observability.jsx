@@ -50,7 +50,7 @@ function Observability() {
       filtered = filtered.filter(t => 
         t.trace_id.toLowerCase().includes(query) ||
         t.error_message?.toLowerCase().includes(query) ||
-        t.steps.some(s => s.name?.toLowerCase().includes(query))
+        (t.steps && t.steps.some(s => s.name?.toLowerCase().includes(query)))
       );
     }
     
