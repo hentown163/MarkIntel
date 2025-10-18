@@ -137,7 +137,7 @@ def get_campaigns(
     try:
         if query or status:
             use_case = Container.get_search_campaigns_use_case(db)
-            return use_case.execute(query=query, status=status)
+            return use_case.execute(query=query or "", status=status or "")
         else:
             use_case = Container.get_list_campaigns_use_case(db)
             return use_case.execute()
