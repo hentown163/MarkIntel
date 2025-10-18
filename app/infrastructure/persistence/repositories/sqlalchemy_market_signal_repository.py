@@ -1,5 +1,6 @@
 """SQLAlchemy implementation of Market Signal Repository"""
 from typing import List, Optional
+from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.domain.repositories.market_signal_repository import MarketSignalRepository
@@ -81,7 +82,7 @@ class SQLAlchemyMarketSignalRepository(MarketSignalRepository):
             timestamp=orm.timestamp,
             relevance_score=orm.relevance_score,
             category=orm.category,
-            impact=ImpactLevel(orm.impact.value)
+            impact=ImpactLevel(orm.impact)
         )
     
     def _to_orm(self, signal: MarketSignal) -> MarketSignalORM:
@@ -104,3 +105,38 @@ class SQLAlchemyMarketSignalRepository(MarketSignalRepository):
         orm.relevance_score = signal.relevance_score
         orm.category = signal.category
         orm.impact = signal.impact.value
+    
+    def find_with_filters(
+        self,
+        impact: Optional[str] = None,
+        category: Optional[str] = None,
+        source: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        min_relevance: Optional[float] = None
+    ) -> List[MarketSignal]:
+        """Find signals with advanced filters"""
+        query = self.session.query(MarketSignalORM)
+        
+        if impact:
+            query = query.filter(MarketSignalORM.impact == impact)
+        
+        if category:
+            query = query.filter(MarketSignalORM.category == category)
+        
+        if source:
+            query = query.filter(MarketSignalORM.source.ilike(f"%{source}%"))
+        
+        if start_date:
+            start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+            query = query.filter(MarketSignalORM.timestamp >= start_dt)
+        
+        if end_date:
+            end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+            query = query.filter(MarketSignalORM.timestamp <= end_dt)
+        
+        if min_relevance is not None:
+            query = query.filter(MarketSignalORM.relevance_score >= min_relevance)
+        
+        orms = query.order_by(MarketSignalORM.timestamp.desc()).all()
+        return [self._to_entity(orm) for orm in orms]

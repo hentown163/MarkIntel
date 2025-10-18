@@ -5,6 +5,7 @@ This is the new main application file using Clean Architecture principles.
 """
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -27,6 +28,8 @@ from app.infrastructure.persistence.models.agent_decision_orm import (
     ExecutionTraceORM,
     ReasoningStepORM
 )
+from app.infrastructure.persistence.models.campaign_template_orm import CampaignTemplateORM
+from app.infrastructure.persistence.models.user_orm import UserORM
 
 app = FastAPI(title="NexusPlanner API", version="2.0.0 - Agentic AI Edition")
 
@@ -352,6 +355,40 @@ def get_recent_market_intelligence(db: Session = Depends(get_db)):
     ]
 
 
+@app.get("/api/market-intelligence/filter")
+def filter_market_intelligence(
+    impact: Optional[str] = Query(None, description="Filter by impact level: low, medium, high"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    source: Optional[str] = Query(None, description="Filter by source (partial match)"),
+    start_date: Optional[str] = Query(None, description="Filter by start date (ISO format)"),
+    end_date: Optional[str] = Query(None, description="Filter by end date (ISO format)"),
+    min_relevance: Optional[float] = Query(None, description="Minimum relevance score (0-1)"),
+    db: Session = Depends(get_db)
+):
+    """Get market signals with advanced filters"""
+    signal_repo = Container.get_market_signal_repository(db)
+    signals = signal_repo.find_with_filters(
+        impact=impact,
+        category=category,
+        source=source,
+        start_date=start_date,
+        end_date=end_date,
+        min_relevance=min_relevance
+    )
+    return [
+        {
+            "id": str(s.id),
+            "source": s.source,
+            "content": s.content,
+            "timestamp": s.timestamp.isoformat() + "Z",
+            "relevance_score": s.relevance_score,
+            "category": s.category,
+            "impact": s.impact.value
+        }
+        for s in signals
+    ]
+
+
 @app.get("/api/dashboard/metrics")
 def get_dashboard_metrics(db: Session = Depends(get_db)):
     """Get dashboard metrics"""
@@ -367,6 +404,478 @@ def get_dashboard_metrics(db: Session = Depends(get_db)):
         "market_insights": {"count": total_signals, "change": "+127 today"},
         "competitor_tracking": {"count": 23, "change": "5 active alerts"},
         "ai_generations": {"count": 156, "change": "+42 this month"},
+    }
+
+
+@app.get("/api/export/campaigns")
+def export_campaigns(
+    format: str = Query("csv", description="Export format: csv or json"),
+    db: Session = Depends(get_db)
+):
+    """Export all campaigns"""
+    from app.utils.export_helpers import dict_to_csv, dict_to_json, flatten_campaign_for_export
+    
+    use_case = Container.get_list_campaigns_use_case(db)
+    result = use_case.execute()
+    campaigns = result.campaigns
+    
+    campaign_dicts = [
+        {
+            "id": str(c.id),
+            "name": c.name,
+            "theme": c.theme,
+            "status": c.status.value,
+            "start_date": c.start_date,
+            "end_date": c.end_date,
+            "created_at": c.created_at.isoformat() if hasattr(c, 'created_at') else "",
+            "ideas": [{"description": idea.description, "target_kpi": idea.target_kpi} for idea in c.ideas],
+            "channel_mix": [{"channel": ch.channel, "allocation": ch.budget_allocation} for ch in c.channel_strategies],
+            "metrics": c.metrics
+        }
+        for c in campaigns
+    ]
+    
+    if format.lower() == "csv":
+        flat_campaigns = [flatten_campaign_for_export(c) for c in campaign_dicts]
+        content, media_type = dict_to_csv(flat_campaigns)
+        return Response(content=content, media_type=media_type, headers={"Content-Disposition": "attachment; filename=campaigns.csv"})
+    else:
+        content, media_type = dict_to_json(campaign_dicts)
+        return Response(content=content, media_type=media_type, headers={"Content-Disposition": "attachment; filename=campaigns.json"})
+
+
+@app.get("/api/export/market-intelligence")
+def export_market_intelligence(
+    format: str = Query("csv", description="Export format: csv or json"),
+    db: Session = Depends(get_db)
+):
+    """Export all market intelligence signals"""
+    from app.utils.export_helpers import dict_to_csv, dict_to_json, flatten_signal_for_export
+    
+    signal_repo = Container.get_market_signal_repository(db)
+    signals = signal_repo.find_all()
+    
+    signal_dicts = [
+        {
+            "id": str(s.id),
+            "source": s.source,
+            "content": s.content,
+            "timestamp": s.timestamp.isoformat() + "Z",
+            "relevance_score": s.relevance_score,
+            "category": s.category,
+            "impact": s.impact.value
+        }
+        for s in signals
+    ]
+    
+    if format.lower() == "csv":
+        flat_signals = [flatten_signal_for_export(s) for s in signal_dicts]
+        content, media_type = dict_to_csv(flat_signals)
+        return Response(content=content, media_type=media_type, headers={"Content-Disposition": "attachment; filename=market_intelligence.csv"})
+    else:
+        content, media_type = dict_to_json(signal_dicts)
+        return Response(content=content, media_type=media_type, headers={"Content-Disposition": "attachment; filename=market_intelligence.json"})
+
+
+@app.post("/api/campaigns/bulk-delete")
+def bulk_delete_campaigns(
+    campaign_ids: List[str],
+    db: Session = Depends(get_db)
+):
+    """Bulk delete campaigns"""
+    deleted_count = 0
+    errors = []
+    
+    for campaign_id in campaign_ids:
+        try:
+            use_case = Container.get_delete_campaign_use_case(db)
+            success = use_case.execute(campaign_id)
+            if success:
+                deleted_count += 1
+        except EntityNotFoundError:
+            errors.append(f"Campaign {campaign_id} not found")
+        except Exception as e:
+            errors.append(f"Error deleting {campaign_id}: {str(e)}")
+    
+    return {
+        "deleted_count": deleted_count,
+        "total_requested": len(campaign_ids),
+        "errors": errors
+    }
+
+
+@app.patch("/api/campaigns/bulk-update")
+def bulk_update_campaigns(
+    updates: List[dict],
+    db: Session = Depends(get_db)
+):
+    """Bulk update campaigns"""
+    from app.application.dtos.request.update_campaign_request import UpdateCampaignRequestDTO
+    
+    updated_count = 0
+    errors = []
+    
+    for update in updates:
+        try:
+            campaign_id = update.get("id")
+            if not campaign_id:
+                errors.append("Missing campaign ID")
+                continue
+            
+            request = UpdateCampaignRequestDTO(
+                name=update.get("name"),
+                status=update.get("status"),
+                theme=update.get("theme")
+            )
+            use_case = Container.get_update_campaign_use_case(db)
+            use_case.execute(campaign_id, request)
+            updated_count += 1
+        except EntityNotFoundError:
+            errors.append(f"Campaign {campaign_id} not found")
+        except Exception as e:
+            errors.append(f"Error updating {campaign_id}: {str(e)}")
+    
+    return {
+        "updated_count": updated_count,
+        "total_requested": len(updates),
+        "errors": errors
+    }
+
+
+@app.get("/api/templates")
+def get_templates(
+    query: Optional[str] = Query(None, description="Search query"),
+    tags: Optional[List[str]] = Query(None, description="Filter by tags"),
+    db: Session = Depends(get_db)
+):
+    """Get all campaign templates"""
+    from app.infrastructure.persistence.repositories.campaign_template_repository import SQLAlchemyCampaignTemplateRepository
+    
+    template_repo = SQLAlchemyCampaignTemplateRepository(db)
+    
+    if query or tags:
+        templates = template_repo.search(query=query, tags=tags)
+    else:
+        templates = template_repo.find_all()
+    
+    return [
+        {
+            "id": t.id,
+            "name": t.name,
+            "description": t.description,
+            "theme": t.theme,
+            "ideas": t.ideas,
+            "channel_mix": t.channel_mix,
+            "created_at": t.created_at.isoformat(),
+            "updated_at": t.updated_at.isoformat(),
+            "tags": t.tags
+        }
+        for t in templates
+    ]
+
+
+@app.get("/api/templates/{template_id}")
+def get_template(template_id: str, db: Session = Depends(get_db)):
+    """Get a specific template"""
+    from app.infrastructure.persistence.repositories.campaign_template_repository import SQLAlchemyCampaignTemplateRepository
+    
+    template_repo = SQLAlchemyCampaignTemplateRepository(db)
+    template = template_repo.find_by_id(template_id)
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    return {
+        "id": template.id,
+        "name": template.name,
+        "description": template.description,
+        "theme": template.theme,
+        "ideas": template.ideas,
+        "channel_mix": template.channel_mix,
+        "created_at": template.created_at.isoformat(),
+        "updated_at": template.updated_at.isoformat(),
+        "tags": template.tags
+    }
+
+
+@app.post("/api/templates")
+def create_template(template_data: dict, db: Session = Depends(get_db)):
+    """Create a new campaign template from a campaign or scratch"""
+    from app.infrastructure.persistence.repositories.campaign_template_repository import SQLAlchemyCampaignTemplateRepository
+    from app.domain.entities.campaign_template import CampaignTemplate
+    from datetime import datetime
+    import uuid
+    
+    template_repo = SQLAlchemyCampaignTemplateRepository(db)
+    
+    template = CampaignTemplate(
+        id=str(uuid.uuid4()),
+        name=template_data.get("name"),
+        description=template_data.get("description"),
+        theme=template_data.get("theme"),
+        ideas=template_data.get("ideas", []),
+        channel_mix=template_data.get("channel_mix", []),
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+        tags=template_data.get("tags", [])
+    )
+    
+    saved_template = template_repo.save(template)
+    
+    return {
+        "id": saved_template.id,
+        "name": saved_template.name,
+        "description": saved_template.description,
+        "theme": saved_template.theme,
+        "ideas": saved_template.ideas,
+        "channel_mix": saved_template.channel_mix,
+        "created_at": saved_template.created_at.isoformat(),
+        "updated_at": saved_template.updated_at.isoformat(),
+        "tags": saved_template.tags
+    }
+
+
+@app.delete("/api/templates/{template_id}")
+def delete_template(template_id: str, db: Session = Depends(get_db)):
+    """Delete a template"""
+    from app.infrastructure.persistence.repositories.campaign_template_repository import SQLAlchemyCampaignTemplateRepository
+    
+    template_repo = SQLAlchemyCampaignTemplateRepository(db)
+    success = template_repo.delete(template_id)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    return {"success": True, "message": "Template deleted successfully"}
+
+
+@app.post("/api/campaigns/from-template/{template_id}")
+def create_campaign_from_template(
+    template_id: str,
+    campaign_data: dict,
+    db: Session = Depends(get_db)
+):
+    """Create a new campaign from a template"""
+    from app.infrastructure.persistence.repositories.campaign_template_repository import SQLAlchemyCampaignTemplateRepository
+    from app.application.dtos.request.generate_campaign_request import GenerateCampaignRequestDTO
+    
+    template_repo = SQLAlchemyCampaignTemplateRepository(db)
+    template = template_repo.find_by_id(template_id)
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    request = GenerateCampaignRequestDTO(
+        service_id=campaign_data.get("service_id"),
+        target_audience=campaign_data.get("target_audience", "Enterprise decision-makers"),
+        budget=campaign_data.get("budget", 50000.0)
+    )
+    
+    use_case = Container.get_generate_campaign_use_case(db)
+    campaign = use_case.execute(request)
+    
+    return campaign
+
+
+@app.get("/api/analytics/campaigns")
+def get_campaign_analytics(db: Session = Depends(get_db)):
+    """Get campaign performance analytics"""
+    from app.domain.entities.campaign import CampaignStatus
+    campaign_repo = Container.get_campaign_repository(db)
+    
+    all_campaigns = campaign_repo.find_all()
+    
+    status_breakdown = {
+        "draft": campaign_repo.count_by_status(CampaignStatus.DRAFT),
+        "active": campaign_repo.count_by_status(CampaignStatus.ACTIVE),
+        "completed": campaign_repo.count_by_status(CampaignStatus.COMPLETED)
+    }
+    
+    total_budget = sum([c.metrics.get("budget_allocated", 0) for c in all_campaigns if c.metrics])
+    total_conversions = sum([c.metrics.get("conversions", 0) for c in all_campaigns if c.metrics])
+    total_leads = sum([c.metrics.get("leads", 0) for c in all_campaigns if c.metrics])
+    
+    recent_performance = []
+    for campaign in all_campaigns[:10]:
+        if campaign.metrics:
+            recent_performance.append({
+                "id": str(campaign.id),
+                "name": campaign.name,
+                "status": campaign.status.value,
+                "conversions": campaign.metrics.get("conversions", 0),
+                "leads": campaign.metrics.get("leads", 0),
+                "engagement": campaign.metrics.get("engagement", 0),
+                "roi": campaign.metrics.get("roi", 0)
+            })
+    
+    return {
+        "total_campaigns": len(all_campaigns),
+        "status_breakdown": status_breakdown,
+        "total_budget": total_budget,
+        "total_conversions": total_conversions,
+        "total_leads": total_leads,
+        "avg_conversion_rate": total_conversions / max(total_leads, 1) * 100 if total_leads > 0 else 0,
+        "recent_performance": recent_performance
+    }
+
+
+@app.get("/api/analytics/trends")
+def get_trends_analytics(db: Session = Depends(get_db)):
+    """Get market intelligence trends"""
+    signal_repo = Container.get_market_signal_repository(db)
+    signals = signal_repo.find_all()
+    
+    impact_breakdown = {"low": 0, "medium": 0, "high": 0}
+    category_breakdown = {}
+    
+    for signal in signals:
+        impact_breakdown[signal.impact.value] = impact_breakdown.get(signal.impact.value, 0) + 1
+        category_breakdown[signal.category] = category_breakdown.get(signal.category, 0) + 1
+    
+    return {
+        "total_signals": len(signals),
+        "impact_breakdown": impact_breakdown,
+        "category_breakdown": category_breakdown,
+        "high_impact_count": impact_breakdown["high"],
+        "categories": list(category_breakdown.keys())
+    }
+
+
+@app.post("/api/notifications/webhook")
+def register_webhook(webhook_data: dict):
+    """Register a webhook URL for notifications"""
+    return {
+        "success": True,
+        "webhook_id": "webhook_123",
+        "url": webhook_data.get("url"),
+        "events": webhook_data.get("events", ["high_impact_signal", "campaign_status_change"]),
+        "message": "Webhook registered successfully"
+    }
+
+
+@app.post("/api/notifications/test")
+def test_notification(notification_data: dict):
+    """Test webhook notification"""
+    from app.infrastructure.notifications.webhook_service import WebhookService
+    
+    url = notification_data.get("webhook_url")
+    if not url:
+        raise HTTPException(status_code=400, detail="webhook_url required")
+    
+    test_payload = {
+        "event": "test",
+        "message": "Test notification from NexusPlanner",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    success = WebhookService.send_webhook(url, test_payload)
+    
+    return {
+        "success": success,
+        "message": "Test notification sent" if success else "Failed to send notification"
+    }
+
+
+@app.post("/api/auth/register")
+def register_user(user_data: dict, db: Session = Depends(get_db)):
+    """Register a new user"""
+    from app.utils.auth_helpers import get_password_hash
+    from app.infrastructure.persistence.models.user_orm import UserORM
+    import uuid
+    
+    existing = db.query(UserORM).filter(
+        (UserORM.email == user_data.get("email")) | 
+        (UserORM.username == user_data.get("username"))
+    ).first()
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Email or username already registered")
+    
+    user = UserORM(
+        id=str(uuid.uuid4()),
+        email=user_data.get("email"),
+        username=user_data.get("username"),
+        hashed_password=get_password_hash(user_data.get("password")),
+        full_name=user_data.get("full_name"),
+        role="user"
+    )
+    
+    db.add(user)
+    db.commit()
+    
+    return {
+        "id": user.id,
+        "email": user.email,
+        "username": user.username,
+        "full_name": user.full_name,
+        "role": user.role
+    }
+
+
+@app.post("/api/auth/login")
+def login_user(credentials: dict, db: Session = Depends(get_db)):
+    """Login user and return JWT token"""
+    from app.utils.auth_helpers import verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+    from app.infrastructure.persistence.models.user_orm import UserORM
+    from datetime import timedelta, datetime
+    
+    user = db.query(UserORM).filter(UserORM.email == credentials.get("email")).first()
+    
+    if not user or not verify_password(credentials.get("password"), user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="User account is inactive")
+    
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.email, "user_id": user.id, "role": user.role},
+        expires_delta=access_token_expires
+    )
+    
+    user.last_login = datetime.utcnow()
+    db.commit()
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+            "full_name": user.full_name,
+            "role": user.role
+        }
+    }
+
+
+@app.get("/api/auth/me")
+def get_current_user(authorization: Optional[str] = None, db: Session = Depends(get_db)):
+    """Get current user from token"""
+    from app.utils.auth_helpers import decode_token
+    from app.infrastructure.persistence.models.user_orm import UserORM
+    
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    token = authorization.replace("Bearer ", "")
+    payload = decode_token(token)
+    
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user = db.query(UserORM).filter(UserORM.id == payload.get("user_id")).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "id": user.id,
+        "email": user.email,
+        "username": user.username,
+        "full_name": user.full_name,
+        "role": user.role,
+        "is_active": user.is_active
     }
 
 

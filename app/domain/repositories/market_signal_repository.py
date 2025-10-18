@@ -47,3 +47,16 @@ class MarketSignalRepository(ABC):
     def delete(self, signal_id: SignalId) -> bool:
         """Delete signal"""
         pass
+    
+    @abstractmethod
+    def find_with_filters(
+        self,
+        impact: Optional[str] = None,
+        category: Optional[str] = None,
+        source: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        min_relevance: Optional[float] = None
+    ) -> List[MarketSignal]:
+        """Find signals with advanced filters"""
+        pass
