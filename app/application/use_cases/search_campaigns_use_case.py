@@ -17,21 +17,14 @@ class SearchCampaignsUseCase:
     
     def execute(self, query: str = None, status: str = None) -> CampaignListResponseDTO:
         """Execute the use case to search campaigns"""
+        campaign_status = None
         if status:
             try:
                 campaign_status = CampaignStatus(status.lower())
-                campaigns = self.campaign_repo.find_by_status(campaign_status)
             except ValueError:
-                campaigns = []
-        else:
-            campaigns = self.campaign_repo.find_all()
+                campaign_status = None
         
-        if query and query.strip():
-            query_lower = query.lower().strip()
-            campaigns = [
-                c for c in campaigns
-                if query_lower in c.name.lower() or query_lower in c.theme.lower()
-            ]
+        campaigns = self.campaign_repo.search(query=query, status=campaign_status)
         
         campaign_dtos = [CampaignMapper.to_response_dto(c) for c in campaigns]
         

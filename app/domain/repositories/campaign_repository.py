@@ -35,6 +35,11 @@ class CampaignRepository(ABC):
         pass
     
     @abstractmethod
+    def search(self, query: str = None, status: CampaignStatus = None) -> List[Campaign]:
+        """Search campaigns by query and/or status"""
+        pass
+    
+    @abstractmethod
     def save(self, campaign: Campaign) -> Campaign:
         """Save campaign (create or update)"""
         pass

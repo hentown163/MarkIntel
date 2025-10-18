@@ -48,6 +48,26 @@ class SQLAlchemyCampaignRepository(CampaignRepository):
         ).limit(limit).all()
         return [self._to_entity(orm) for orm in orms]
     
+    def search(self, query: str = None, status: CampaignStatus = None) -> List[Campaign]:
+        """Search campaigns by query and/or status using SQL"""
+        q = self.session.query(CampaignORM)
+        
+        if status:
+            q = q.filter(CampaignORM.status == status.value)
+        
+        if query and query.strip():
+            search_term = f"%{query.lower().strip()}%"
+            from sqlalchemy import or_, func
+            q = q.filter(
+                or_(
+                    func.lower(CampaignORM.name).like(search_term),
+                    func.lower(CampaignORM.theme).like(search_term)
+                )
+            )
+        
+        orms = q.order_by(CampaignORM.start_date.desc()).all()
+        return [self._to_entity(orm) for orm in orms]
+    
     def save(self, campaign: Campaign) -> Campaign:
         """Save campaign (create or update)"""
         existing = self.session.query(CampaignORM).filter(
@@ -64,12 +84,17 @@ class SQLAlchemyCampaignRepository(CampaignRepository):
         return campaign
     
     def delete(self, campaign_id: CampaignId) -> bool:
-        """Delete campaign"""
-        result = self.session.query(CampaignORM).filter(
+        """Delete campaign with proper cascade"""
+        orm = self.session.query(CampaignORM).filter(
             CampaignORM.id == str(campaign_id)
-        ).delete()
+        ).first()
+        
+        if not orm:
+            return False
+        
+        self.session.delete(orm)
         self.session.commit()
-        return result > 0
+        return True
     
     def count_by_status(self, status: CampaignStatus) -> int:
         """Count campaigns by status"""
@@ -112,7 +137,7 @@ class SQLAlchemyCampaignRepository(CampaignRepository):
         return Campaign(
             id=CampaignId(orm.id),
             name=orm.name,
-            status=CampaignStatus(orm.status.value),
+            status=CampaignStatus(orm.status),
             theme=orm.theme,
             date_range=DateRange(orm.start_date, orm.end_date),
             ideas=ideas,
