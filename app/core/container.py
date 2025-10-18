@@ -12,6 +12,9 @@ from app.application.use_cases.get_campaign_detail_use_case import GetCampaignDe
 from app.application.use_cases.regenerate_ideas_use_case import RegenerateIdeasUseCase
 from app.application.use_cases.regenerate_strategies_use_case import RegenerateStrategiesUseCase
 from app.application.use_cases.record_feedback_use_case import RecordFeedbackUseCase
+from app.application.use_cases.search_campaigns_use_case import SearchCampaignsUseCase
+from app.application.use_cases.update_campaign_use_case import UpdateCampaignUseCase
+from app.application.use_cases.delete_campaign_use_case import DeleteCampaignUseCase
 from app.core.settings import settings
 
 
@@ -103,5 +106,26 @@ class Container:
     def get_record_feedback_use_case(session: Session):
         """Get record feedback use case"""
         return RecordFeedbackUseCase(
+            campaign_repo=Container.get_campaign_repository(session)
+        )
+    
+    @staticmethod
+    def get_search_campaigns_use_case(session: Session):
+        """Get search campaigns use case"""
+        return SearchCampaignsUseCase(
+            campaign_repo=Container.get_campaign_repository(session)
+        )
+    
+    @staticmethod
+    def get_update_campaign_use_case(session: Session):
+        """Get update campaign use case"""
+        return UpdateCampaignUseCase(
+            campaign_repo=Container.get_campaign_repository(session)
+        )
+    
+    @staticmethod
+    def get_delete_campaign_use_case(session: Session):
+        """Get delete campaign use case"""
+        return DeleteCampaignUseCase(
             campaign_repo=Container.get_campaign_repository(session)
         )

@@ -3,10 +3,10 @@ NexusPlanner API - Clean Architecture Implementation
 
 This is the new main application file using Clean Architecture principles.
 """
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.core.settings import settings
 from app.core.exceptions import EntityNotFoundError, UseCaseError
@@ -14,6 +14,7 @@ from app.infrastructure.config.database import get_db, init_db
 from app.core.container import Container
 from app.application.dtos.request.generate_campaign_request import GenerateCampaignRequestDTO
 from app.application.dtos.request.campaign_feedback_request import CampaignFeedbackRequestDTO
+from app.application.dtos.request.update_campaign_request import UpdateCampaignRequestDTO
 from app.application.dtos.response.campaign_response import CampaignResponseDTO, CampaignListResponseDTO
 from app.application.dtos.response.feedback_response import FeedbackResponseDTO
 
@@ -86,11 +87,19 @@ def generate_campaign(
 
 
 @app.get("/api/campaigns", response_model=CampaignListResponseDTO)
-def get_campaigns(db: Session = Depends(get_db)):
-    """Get all campaigns"""
+def get_campaigns(
+    query: Optional[str] = Query(None, description="Search query for campaign name or theme"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    db: Session = Depends(get_db)
+):
+    """Get all campaigns with optional search and filtering"""
     try:
-        use_case = Container.get_list_campaigns_use_case(db)
-        return use_case.execute()
+        if query or status:
+            use_case = Container.get_search_campaigns_use_case(db)
+            return use_case.execute(query=query, status=status)
+        else:
+            use_case = Container.get_list_campaigns_use_case(db)
+            return use_case.execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -115,6 +124,47 @@ def get_campaign(campaign_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Campaign not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.patch("/api/campaigns/{campaign_id}", response_model=CampaignResponseDTO)
+def update_campaign(
+    campaign_id: str,
+    request: UpdateCampaignRequestDTO,
+    db: Session = Depends(get_db)
+):
+    """
+    Update a campaign
+    
+    Allows updating campaign name, status, and theme.
+    """
+    try:
+        use_case = Container.get_update_campaign_use_case(db)
+        return use_case.execute(campaign_id, request)
+    except EntityNotFoundError:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    except UseCaseError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+
+
+@app.delete("/api/campaigns/{campaign_id}")
+def delete_campaign(campaign_id: str, db: Session = Depends(get_db)):
+    """
+    Delete a campaign
+    
+    Permanently removes a campaign from the system.
+    """
+    try:
+        use_case = Container.get_delete_campaign_use_case(db)
+        success = use_case.execute(campaign_id)
+        return {"success": success, "message": f"Campaign {campaign_id} deleted successfully"}
+    except EntityNotFoundError:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    except UseCaseError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
 
 @app.patch("/api/campaigns/{campaign_id}/regenerate-ideas", response_model=CampaignResponseDTO)
