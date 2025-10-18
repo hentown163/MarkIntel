@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Activity, Brain, Clock, CheckCircle, AlertCircle, TrendingUp } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Activity, Brain, Clock, CheckCircle, AlertCircle, TrendingUp, Filter, Search } from 'lucide-react';
 import './Observability.css';
 import useObservability from '../hooks/useObservability';
 
@@ -7,8 +7,60 @@ function Observability() {
   const [activeTab, setActiveTab] = useState('decisions');
   const [selectedDecision, setSelectedDecision] = useState(null);
   const [selectedTrace, setSelectedTrace] = useState(null);
+  const [decisionTypeFilter, setDecisionTypeFilter] = useState('all');
+  const [traceStatusFilter, setTraceStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   
   const { decisions, traces, metrics, stats, loading, error } = useObservability();
+
+  const filteredDecisions = useMemo(() => {
+    if (!decisions) return [];
+    
+    let filtered = decisions;
+    
+    if (decisionTypeFilter !== 'all') {
+      filtered = filtered.filter(d => d.decision_type === decisionTypeFilter);
+    }
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(d => 
+        d.decision_type.toLowerCase().includes(query) ||
+        d.reasoning_chain.some(r => r.toLowerCase().includes(query)) ||
+        d.data_sources.some(s => s.toLowerCase().includes(query))
+      );
+    }
+    
+    return filtered;
+  }, [decisions, decisionTypeFilter, searchQuery]);
+
+  const filteredTraces = useMemo(() => {
+    if (!traces) return [];
+    
+    let filtered = traces;
+    
+    if (traceStatusFilter === 'success') {
+      filtered = filtered.filter(t => t.success);
+    } else if (traceStatusFilter === 'failed') {
+      filtered = filtered.filter(t => !t.success);
+    }
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(t => 
+        t.trace_id.toLowerCase().includes(query) ||
+        t.error_message?.toLowerCase().includes(query) ||
+        t.steps.some(s => s.name?.toLowerCase().includes(query))
+      );
+    }
+    
+    return filtered;
+  }, [traces, traceStatusFilter, searchQuery]);
+
+  const decisionTypes = useMemo(() => {
+    if (!decisions) return [];
+    return [...new Set(decisions.map(d => d.decision_type))];
+  }, [decisions]);
 
   if (loading) {
     return (
@@ -117,17 +169,26 @@ function Observability() {
       <div className="tab-content">
         {activeTab === 'decisions' && (
           <DecisionsTab 
-            decisions={decisions} 
+            decisions={filteredDecisions} 
             selectedDecision={selectedDecision}
             onSelectDecision={setSelectedDecision}
+            decisionTypes={decisionTypes}
+            decisionTypeFilter={decisionTypeFilter}
+            onDecisionTypeChange={setDecisionTypeFilter}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
           />
         )}
         
         {activeTab === 'traces' && (
           <TracesTab 
-            traces={traces}
+            traces={filteredTraces}
             selectedTrace={selectedTrace}
             onSelectTrace={setSelectedTrace}
+            traceStatusFilter={traceStatusFilter}
+            onTraceStatusChange={setTraceStatusFilter}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
           />
         )}
         
@@ -139,21 +200,40 @@ function Observability() {
   );
 }
 
-function DecisionsTab({ decisions, selectedDecision, onSelectDecision }) {
-  if (!decisions || decisions.length === 0) {
-    return (
-      <div className="empty-state">
-        <Brain size={48} />
-        <h3>No Decisions Logged</h3>
-        <p>Agent decisions will appear here as the system operates</p>
-      </div>
-    );
-  }
-
+function DecisionsTab({ decisions, selectedDecision, onSelectDecision, decisionTypes, decisionTypeFilter, onDecisionTypeChange, searchQuery, onSearchChange }) {
   return (
-    <div className="decisions-container">
-      <div className="decisions-list">
-        {decisions.map((decision) => (
+    <>
+      <div className="filters-bar">
+        <div className="search-box">
+          <Search size={18} />
+          <input
+            type="text"
+            placeholder="Search decisions..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
+        <div className="filter-group">
+          <Filter size={18} />
+          <select value={decisionTypeFilter} onChange={(e) => onDecisionTypeChange(e.target.value)}>
+            <option value="all">All Types</option>
+            {decisionTypes.map(type => (
+              <option key={type} value={type}>{formatDecisionType(type)}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {!decisions || decisions.length === 0 ? (
+        <div className="empty-state">
+          <Brain size={48} />
+          <h3>No Decisions Found</h3>
+          <p>Try adjusting your filters or wait for agent decisions to be logged</p>
+        </div>
+      ) : (
+        <div className="decisions-container">
+          <div className="decisions-list">
+            {decisions.map((decision) => (
           <div
             key={decision.decision_id}
             className={`decision-card ${selectedDecision?.decision_id === decision.decision_id ? 'selected' : ''}`}
@@ -244,25 +324,45 @@ function DecisionsTab({ decisions, selectedDecision, onSelectDecision }) {
           )}
         </div>
       )}
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 
-function TracesTab({ traces, selectedTrace, onSelectTrace }) {
-  if (!traces || traces.length === 0) {
-    return (
-      <div className="empty-state">
-        <Activity size={48} />
-        <h3>No Execution Traces</h3>
-        <p>Execution traces will appear here as the agent performs tasks</p>
-      </div>
-    );
-  }
-
+function TracesTab({ traces, selectedTrace, onSelectTrace, traceStatusFilter, onTraceStatusChange, searchQuery, onSearchChange }) {
   return (
-    <div className="traces-container">
-      <div className="traces-list">
-        {traces.map((trace) => (
+    <>
+      <div className="filters-bar">
+        <div className="search-box">
+          <Search size={18} />
+          <input
+            type="text"
+            placeholder="Search traces..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
+        <div className="filter-group">
+          <Filter size={18} />
+          <select value={traceStatusFilter} onChange={(e) => onTraceStatusChange(e.target.value)}>
+            <option value="all">All Status</option>
+            <option value="success">Success Only</option>
+            <option value="failed">Failed Only</option>
+          </select>
+        </div>
+      </div>
+
+      {!traces || traces.length === 0 ? (
+        <div className="empty-state">
+          <Activity size={48} />
+          <h3>No Traces Found</h3>
+          <p>Try adjusting your filters or wait for execution traces to be logged</p>
+        </div>
+      ) : (
+        <div className="traces-container">
+          <div className="traces-list">
+            {traces.map((trace) => (
           <div
             key={trace.trace_id}
             className={`trace-card ${selectedTrace?.trace_id === trace.trace_id ? 'selected' : ''} ${trace.success ? 'success' : 'failure'}`}
@@ -366,7 +466,9 @@ function TracesTab({ traces, selectedTrace, onSelectTrace }) {
           </div>
         </div>
       )}
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiClient } from '../api/client';
+import { api } from '../api/client';
 
 export default function useObservability() {
   const [decisions, setDecisions] = useState([]);
@@ -19,10 +19,10 @@ export default function useObservability() {
       setError(null);
 
       const [decisionsRes, tracesRes, decisionStatsRes, traceStatsRes] = await Promise.all([
-        apiClient.get('/audit/decisions/recent?limit=50'),
-        apiClient.get('/audit/traces/recent?limit=50'),
-        apiClient.get('/audit/stats/decisions'),
-        apiClient.get('/audit/stats/traces')
+        api.get('/audit/decisions/recent?limit=50'),
+        api.get('/audit/traces/recent?limit=50'),
+        api.get('/audit/stats/decisions'),
+        api.get('/audit/stats/traces')
       ]);
 
       setDecisions(decisionsRes.data);
