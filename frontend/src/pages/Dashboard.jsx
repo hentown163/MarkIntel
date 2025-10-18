@@ -24,8 +24,8 @@ export default function Dashboard() {
         marketIntelligenceAPI.getRecent(),
       ]);
       setMetrics(metricsRes.data);
-      setRecentCampaigns(campaignsRes.data);
-      setRecentInsights(insightsRes.data);
+      setRecentCampaigns(campaignsRes.data.campaigns || []);
+      setRecentInsights(insightsRes.data || []);
     } catch (error) {
       console.error('Error loading dashboard:', error);
     }
