@@ -26,6 +26,17 @@ class Settings(BaseSettings):
     enable_database_logging: bool = True
     agent_log_retention_days: int = 90
     
+    # Authentication Settings
+    jwt_secret_key: Optional[str] = None
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 480  # 8 hours
+    
+    # AWS Active Directory Settings
+    aws_ad_server: Optional[str] = None
+    aws_ad_domain: Optional[str] = None
+    aws_ad_base_dn: Optional[str] = None
+    aws_ad_use_ssl: bool = True
+    
     cors_origins: list[str] = ["*"]
     
     class Config:

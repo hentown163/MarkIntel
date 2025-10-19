@@ -3,10 +3,19 @@ from datetime import datetime, timedelta
 from typing import Optional
 from passlib.context import CryptContext
 from jose import JWTError, jwt
+from app.core.settings import settings
+import os
 
-SECRET_KEY = "your-secret-key-change-in-production"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+# JWT configuration - fail fast if not set properly
+SECRET_KEY = settings.jwt_secret_key or os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY or SECRET_KEY == "your-secret-key-change-in-production-please-use-strong-random-key":
+    raise ValueError(
+        "JWT_SECRET_KEY must be set in environment variables. "
+        "Generate a secure random key with: openssl rand -hex 32"
+    )
+
+ALGORITHM = settings.jwt_algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.jwt_access_token_expire_minutes
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

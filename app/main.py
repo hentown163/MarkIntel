@@ -21,6 +21,8 @@ from app.application.dtos.response.feedback_response import FeedbackResponseDTO
 
 from app.infrastructure.persistence.seed_data import seed_database
 from app.api.routes import agent, audit
+from app.api import auth
+from app.core.auth_middleware import get_current_user, TokenData
 
 # Import ORM models to register them with SQLAlchemy
 from app.infrastructure.persistence.models.agent_decision_orm import (
@@ -40,6 +42,8 @@ from app.infrastructure.persistence.models.user_orm import UserORM
 
 app = FastAPI(title="NexusPlanner API", version="2.0.0 - Agentic AI Edition")
 
+# Include authentication routes
+app.include_router(auth.router)
 # Include agent routes
 app.include_router(agent.router)
 # Include audit routes for observability
@@ -117,7 +121,8 @@ def root():
 @app.post("/api/campaigns/generate", response_model=CampaignResponseDTO)
 def generate_campaign(
     request: GenerateCampaignRequestDTO,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
 ):
     """
     Generate a new campaign using AI (or rule-based fallback)
@@ -141,7 +146,8 @@ def generate_campaign(
 def get_campaigns(
     query: Optional[str] = Query(None, description="Search query for campaign name or theme"),
     status: Optional[str] = Query(None, description="Filter by status"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
 ):
     """Get all campaigns with optional search and filtering"""
     try:
@@ -156,7 +162,10 @@ def get_campaigns(
 
 
 @app.get("/api/campaigns/recent", response_model=CampaignListResponseDTO)
-def get_recent_campaigns(db: Session = Depends(get_db)):
+def get_recent_campaigns(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
     """Get recent campaigns"""
     try:
         use_case = Container.get_list_campaigns_use_case(db)
@@ -166,7 +175,11 @@ def get_recent_campaigns(db: Session = Depends(get_db)):
 
 
 @app.get("/api/campaigns/{campaign_id}", response_model=CampaignResponseDTO)
-def get_campaign(campaign_id: str, db: Session = Depends(get_db)):
+def get_campaign(
+    campaign_id: str,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
     """Get a specific campaign"""
     try:
         use_case = Container.get_campaign_detail_use_case(db)
@@ -260,7 +273,8 @@ def regenerate_channel_strategies(campaign_id: str, db: Session = Depends(get_db
 def submit_campaign_feedback(
     campaign_id: str,
     feedback: CampaignFeedbackRequestDTO,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
 ):
     """
     Submit feedback for a campaign
@@ -281,7 +295,10 @@ def submit_campaign_feedback(
 
 
 @app.get("/api/services")
-def get_services(db: Session = Depends(get_db)):
+def get_services(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
     """Get all services"""
     service_repo = Container.get_service_repository(db)
     services = service_repo.find_all()
@@ -302,7 +319,11 @@ def get_services(db: Session = Depends(get_db)):
 
 
 @app.get("/api/services/{service_id}")
-def get_service(service_id: str, db: Session = Depends(get_db)):
+def get_service(
+    service_id: str,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
     """Get a specific service"""
     from app.domain.value_objects import ServiceId
     service_repo = Container.get_service_repository(db)
@@ -325,7 +346,10 @@ def get_service(service_id: str, db: Session = Depends(get_db)):
 
 
 @app.get("/api/market-intelligence")
-def get_market_intelligence(db: Session = Depends(get_db)):
+def get_market_intelligence(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
     """Get all market signals"""
     signal_repo = Container.get_market_signal_repository(db)
     signals = signal_repo.find_all()
@@ -344,7 +368,10 @@ def get_market_intelligence(db: Session = Depends(get_db)):
 
 
 @app.get("/api/market-intelligence/recent")
-def get_recent_market_intelligence(db: Session = Depends(get_db)):
+def get_recent_market_intelligence(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
     """Get recent market signals"""
     signal_repo = Container.get_market_signal_repository(db)
     signals = signal_repo.find_recent(limit=4)
@@ -397,7 +424,10 @@ def filter_market_intelligence(
 
 
 @app.get("/api/dashboard/metrics")
-def get_dashboard_metrics(db: Session = Depends(get_db)):
+def get_dashboard_metrics(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
     """Get dashboard metrics"""
     from app.domain.entities.campaign import CampaignStatus
     campaign_repo = Container.get_campaign_repository(db)
