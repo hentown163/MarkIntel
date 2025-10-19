@@ -103,6 +103,100 @@ function Hero() {
     }
   ];
 
+  const pricingPlans = [
+    {
+      name: "Free Trial",
+      price: "$0",
+      period: "15 days",
+      description: "Perfect for individuals to explore NexusPlanner",
+      features: [
+        "3 AI-generated campaigns",
+        "Basic market intelligence",
+        "Campaign templates access",
+        "Standard support",
+        "Single user account",
+        "Email notifications"
+      ],
+      cta: "Start Free Trial",
+      highlighted: false
+    },
+    {
+      name: "Team",
+      price: "$299",
+      period: "per month",
+      description: "Best for growing teams and agencies",
+      features: [
+        "Unlimited AI-generated campaigns",
+        "Real-time market intelligence",
+        "Advanced RAG-powered insights",
+        "Multi-agent coordination",
+        "Up to 10 team members",
+        "Priority support",
+        "Campaign performance analytics",
+        "CRM integration (HubSpot, Salesforce)",
+        "Custom templates",
+        "API access"
+      ],
+      cta: "Get Started",
+      highlighted: true
+    },
+    {
+      name: "Enterprise",
+      price: "Custom",
+      period: "contact sales",
+      description: "For large organizations with advanced needs",
+      features: [
+        "Everything in Team, plus:",
+        "Unlimited team members",
+        "Dedicated account manager",
+        "Custom AI model training",
+        "Advanced observability & audit trails",
+        "SSO & Active Directory integration",
+        "Custom SLA agreements",
+        "On-premise deployment options",
+        "White-label capabilities",
+        "Advanced security & compliance",
+        "24/7 premium support",
+        "Custom integrations"
+      ],
+      cta: "Contact Sales",
+      highlighted: false
+    }
+  ];
+
+  const organizationalTeams = [
+    {
+      team: "Marketing & Growth",
+      useCase: "Generate and optimize campaigns, track ROI, and respond to market trends instantly",
+      impact: "156% increase in campaign ROI on average"
+    },
+    {
+      team: "Product Marketing",
+      useCase: "Launch products with data-driven campaigns tailored to specific customer segments",
+      impact: "Reduce campaign planning time from weeks to minutes"
+    },
+    {
+      team: "Sales Enablement",
+      useCase: "Create targeted campaigns based on CRM data and customer behavior patterns",
+      impact: "Better sales-marketing alignment and lead quality"
+    },
+    {
+      team: "Customer Success",
+      useCase: "Design retention campaigns and upsell strategies using customer insights",
+      impact: "Increased customer lifetime value"
+    },
+    {
+      team: "Revenue Operations",
+      useCase: "Optimize marketing spend with AI-powered analytics and performance tracking",
+      impact: "Data-driven budget allocation decisions"
+    },
+    {
+      team: "Business Intelligence",
+      useCase: "Access detailed observability into campaign performance and market signals",
+      impact: "Complete transparency into marketing effectiveness"
+    }
+  ];
+
   const nextTestimonial = () => {
     setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
   };
@@ -255,6 +349,164 @@ function Hero() {
                 <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
+          </div>
+        </section>
+
+        <section className="case-study-section">
+          <h2 className="section-title">Success Story</h2>
+          <p className="section-subtitle">How TechVenture Inc. Transformed Their Marketing</p>
+          
+          <div className="case-study-card">
+            <div className="case-study-header">
+              <div className="company-badge">
+                <div className="company-logo">TV</div>
+                <div>
+                  <h3>TechVenture Inc.</h3>
+                  <p>Enterprise SaaS Platform</p>
+                </div>
+              </div>
+              <div className="case-study-meta">
+                <span className="industry-tag">B2B SaaS</span>
+                <span className="size-tag">250+ Employees</span>
+              </div>
+            </div>
+
+            <div className="case-study-content">
+              <div className="challenge-section">
+                <h4>The Challenge</h4>
+                <p>
+                  TechVenture's marketing team was spending 2-3 weeks planning each campaign, struggling to keep pace with rapidly changing market conditions. Their manual process involved multiple spreadsheets, endless meetings, and by the time campaigns launched, market opportunities had often passed.
+                </p>
+              </div>
+
+              <div className="solution-section">
+                <h4>The Solution</h4>
+                <p>
+                  TechVenture implemented NexusPlanner's AI-powered platform to automate campaign generation and tap into real-time market intelligence. The platform integrated seamlessly with their existing HubSpot CRM, allowing them to leverage customer data for more targeted campaigns.
+                </p>
+              </div>
+
+              <div className="results-grid">
+                <div className="result-item">
+                  <div className="result-number">156%</div>
+                  <div className="result-label">Increase in Campaign ROI</div>
+                </div>
+                <div className="result-item">
+                  <div className="result-number">92%</div>
+                  <div className="result-label">Reduction in Planning Time</div>
+                </div>
+                <div className="result-item">
+                  <div className="result-number">3.2x</div>
+                  <div className="result-label">More Campaigns Launched</div>
+                </div>
+                <div className="result-item">
+                  <div className="result-number">$2.4M</div>
+                  <div className="result-label">Additional Revenue Generated</div>
+                </div>
+              </div>
+
+              <div className="key-benefits">
+                <h4>Key Benefits Realized</h4>
+                <ul>
+                  <li>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <circle cx="10" cy="10" r="9" stroke="#4F9CFF" strokeWidth="2"/>
+                      <path d="M6 10L9 13L14 7" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Automated campaign generation from market signals in under 5 minutes
+                  </li>
+                  <li>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <circle cx="10" cy="10" r="9" stroke="#4F9CFF" strokeWidth="2"/>
+                      <path d="M6 10L9 13L14 7" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Real-time market trend detection enabling rapid response to opportunities
+                  </li>
+                  <li>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <circle cx="10" cy="10" r="9" stroke="#4F9CFF" strokeWidth="2"/>
+                      <path d="M6 10L9 13L14 7" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Complete observability into AI decision-making for compliance and optimization
+                  </li>
+                  <li>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <circle cx="10" cy="10" r="9" stroke="#4F9CFF" strokeWidth="2"/>
+                      <path d="M6 10L9 13L14 7" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    CRM integration providing personalized campaigns based on customer segments
+                  </li>
+                </ul>
+              </div>
+
+              <blockquote className="case-study-quote">
+                "NexusPlanner didn't just speed up our process - it fundamentally transformed how we think about campaign planning. We're now proactive instead of reactive, and our results speak for themselves."
+                <cite>- Sarah Chen, CMO at TechVenture Inc.</cite>
+              </blockquote>
+            </div>
+          </div>
+        </section>
+
+        <section className="pricing-section">
+          <h2 className="section-title">Simple, Transparent Pricing</h2>
+          <p className="section-subtitle">Choose the plan that fits your needs</p>
+          
+          <div className="pricing-grid">
+            {pricingPlans.map((plan, index) => (
+              <div key={index} className={`pricing-card ${plan.highlighted ? 'highlighted' : ''}`}>
+                {plan.highlighted && <div className="popular-badge">Most Popular</div>}
+                <div className="pricing-header">
+                  <h3 className="plan-name">{plan.name}</h3>
+                  <div className="plan-price">
+                    <span className="price">{plan.price}</span>
+                    <span className="period">/{plan.period}</span>
+                  </div>
+                  <p className="plan-description">{plan.description}</p>
+                </div>
+                <ul className="features-list">
+                  {plan.features.map((feature, i) => (
+                    <li key={i}>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="9" stroke={plan.highlighted ? '#4F9CFF' : '#64748b'} strokeWidth="2"/>
+                        <path d="M6 10L9 13L14 7" stroke={plan.highlighted ? '#4F9CFF' : '#64748b'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <button 
+                  className={`pricing-cta ${plan.highlighted ? 'primary' : 'secondary'}`}
+                  onClick={handleGetStarted}
+                >
+                  {plan.cta}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="organizational-teams-section">
+          <h2 className="section-title">Which Teams Can Use NexusPlanner?</h2>
+          <p className="section-subtitle">
+            NexusPlanner powers collaboration across your entire organization
+          </p>
+          
+          <div className="teams-grid">
+            {organizationalTeams.map((item, index) => (
+              <div key={index} className="team-card">
+                <div className="team-header">
+                  <h3>{item.team}</h3>
+                </div>
+                <p className="team-usecase">{item.useCase}</p>
+                <div className="team-impact">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 12L5 8L8 10L12 4" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="12" cy="4" r="1.5" fill="#4F9CFF"/>
+                  </svg>
+                  <span>{item.impact}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
