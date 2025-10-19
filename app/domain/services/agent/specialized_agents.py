@@ -7,6 +7,7 @@ from enum import Enum
 from openai import OpenAI
 
 from app.core.settings import settings
+from app.infrastructure.persistence.repositories.agent_memory_repository import AgentMemoryRepository
 
 
 class AgentRole(Enum):
@@ -32,27 +33,86 @@ class AgentMessage:
 class BaseAgent:
     """Base class for all specialized agents"""
     
-    def __init__(self, agent_id: str, role: AgentRole):
+    def __init__(self, agent_id: str, role: AgentRole, repository: Optional[AgentMemoryRepository] = None, session_id: Optional[str] = None):
         self.agent_id = agent_id
         self.role = role
+        self.repository = repository
+        self.session_id = session_id or f"session_{uuid.uuid4().hex[:12]}"
         self.client = OpenAI(api_key=settings.openai_api_key) if settings.openai_api_key else None
         self.memory: List[Dict] = []
         self.learnings: List[Dict] = []
+        
+        if self.repository:
+            self._load_historical_learnings()
+    
+    def _load_historical_learnings(self):
+        """Load historical learnings from database"""
+        if not self.repository:
+            return
+        
+        db_learnings = self.repository.retrieve_learnings(
+            agent_id=self.agent_id,
+            min_confidence=0.6,
+            status='active',
+            limit=20
+        )
+        
+        for learning in db_learnings:
+            self.learnings.append({
+                "learning_id": learning.learning_id,
+                "category": learning.learning_category,
+                "finding": learning.finding,
+                "confidence": learning.confidence,
+                "applied_count": learning.applied_count
+            })
     
     def receive_message(self, message: AgentMessage) -> Optional[AgentMessage]:
         """Receive and process a message from another agent"""
         raise NotImplementedError
     
-    def add_to_memory(self, content: str, importance: float = 0.5):
-        """Add something to the agent's short-term memory"""
-        self.memory.append({
+    def add_to_memory(self, content: str, importance: float = 0.5, memory_type: str = "observation"):
+        """Add something to the agent's memory (persisted to database)"""
+        memory_data = {
             "content": content,
             "timestamp": datetime.now(),
-            "importance": importance
-        })
-        # Keep only last 50 items to prevent memory bloat
+            "importance": importance,
+            "memory_type": memory_type
+        }
+        
+        self.memory.append(memory_data)
         if len(self.memory) > 50:
             self.memory = self.memory[-50:]
+        
+        if self.repository:
+            self.repository.store_memory(
+                agent_id=self.agent_id,
+                memory_type=memory_type,
+                content=content,
+                importance_score=importance,
+                session_id=self.session_id
+            )
+    
+    def store_learning(self, learning_category: str, finding: str, evidence: Dict, confidence: float = 0.7):
+        """Store a learning to database"""
+        learning_data = {
+            "category": learning_category,
+            "finding": finding,
+            "evidence": evidence,
+            "confidence": confidence,
+            "timestamp": datetime.now()
+        }
+        self.learnings.append(learning_data)
+        
+        if self.repository:
+            learning_orm = self.repository.store_learning(
+                agent_id=self.agent_id,
+                source_type="agent_evaluation",
+                learning_category=learning_category,
+                finding=finding,
+                evidence=evidence,
+                confidence=confidence
+            )
+            learning_data["learning_id"] = learning_orm.learning_id
 
 
 class ResearchAgent(BaseAgent):
@@ -66,8 +126,8 @@ class ResearchAgent(BaseAgent):
     - Data validation
     """
     
-    def __init__(self):
-        super().__init__(agent_id="research_agent", role=AgentRole.RESEARCH)
+    def __init__(self, repository: Optional[AgentMemoryRepository] = None, session_id: Optional[str] = None):
+        super().__init__(agent_id="research_agent", role=AgentRole.RESEARCH, repository=repository, session_id=session_id)
     
     def research_market_trends(self, topic: str, market_signals: List[Dict]) -> Dict[str, Any]:
         """Research market trends for a given topic"""
@@ -208,8 +268,8 @@ class StrategyAgent(BaseAgent):
     - Risk assessment
     """
     
-    def __init__(self):
-        super().__init__(agent_id="strategy_agent", role=AgentRole.STRATEGY)
+    def __init__(self, repository: Optional[AgentMemoryRepository] = None, session_id: Optional[str] = None):
+        super().__init__(agent_id="strategy_agent", role=AgentRole.STRATEGY, repository=repository, session_id=session_id)
     
     def develop_campaign_strategy(
         self,
@@ -335,8 +395,8 @@ class ExecutionAgent(BaseAgent):
     - Progress tracking
     """
     
-    def __init__(self):
-        super().__init__(agent_id="execution_agent", role=AgentRole.EXECUTION)
+    def __init__(self, repository: Optional[AgentMemoryRepository] = None, session_id: Optional[str] = None):
+        super().__init__(agent_id="execution_agent", role=AgentRole.EXECUTION, repository=repository, session_id=session_id)
     
     def execute_campaign_plan(
         self,
@@ -444,8 +504,8 @@ class EvaluationAgent(BaseAgent):
     - Self-correction triggers
     """
     
-    def __init__(self):
-        super().__init__(agent_id="evaluation_agent", role=AgentRole.EVALUATION)
+    def __init__(self, repository: Optional[AgentMemoryRepository] = None, session_id: Optional[str] = None):
+        super().__init__(agent_id="evaluation_agent", role=AgentRole.EVALUATION, repository=repository, session_id=session_id)
     
     def evaluate_campaign_performance(
         self,
@@ -520,20 +580,34 @@ class EvaluationAgent(BaseAgent):
         
         # Generate learnings
         if engagement_rate > 0.1:
-            evaluation["learnings"].append({
+            learning = {
                 "finding": "High engagement indicates strong product-market fit",
                 "evidence": f"Engagement rate: {engagement_rate:.1%}",
                 "confidence": 0.9,
                 "category": "targeting"
-            })
+            }
+            evaluation["learnings"].append(learning)
+            self.store_learning(
+                learning_category="targeting",
+                finding=learning["finding"],
+                evidence={"engagement_rate": engagement_rate, "metrics": actual_metrics},
+                confidence=0.9
+            )
         
         if len(evaluation["corrections_needed"]) > 0:
-            evaluation["learnings"].append({
+            learning = {
                 "finding": "Campaign requires optimization in multiple areas",
                 "evidence": f"{len(evaluation['corrections_needed'])} areas identified",
                 "confidence": 0.8,
                 "category": "strategy"
-            })
+            }
+            evaluation["learnings"].append(learning)
+            self.store_learning(
+                learning_category="strategy",
+                finding=learning["finding"],
+                evidence={"corrections_needed": evaluation["corrections_needed"]},
+                confidence=0.8
+            )
         
         # Overall assessment
         if evaluation["performance_score"] >= 0.8:
