@@ -223,16 +223,22 @@ def generate_campaign_with_agents(request: MultiAgentCampaignRequest):
     working together!
     """
     try:
-        from app.domain.services.agent.agent_coordinator import get_agent_coordinator
+        from app.domain.services.agent.agent_coordinator import AgentCoordinator
         from app.infrastructure.persistence.repositories.market_signal_repository import get_market_signal_repository
+        from app.infrastructure.persistence.repositories.agent_memory_repository import get_agent_memory_repository
         from sqlalchemy.orm import Session
         from app.infrastructure.config.database import SessionLocal
         
-        coordinator = get_agent_coordinator()
-        
-        # Get market signals for research
+        # Create database session for repositories
         db = SessionLocal()
         try:
+            # Create repository for agent memory persistence
+            agent_memory_repo = get_agent_memory_repository(db)
+            
+            # Create coordinator with repository for persistence
+            coordinator = AgentCoordinator(repository=agent_memory_repo)
+        
+            # Get market signals for research
             signal_repo = get_market_signal_repository(db)
             market_signals = signal_repo.find_all()
             market_signals_data = [
@@ -244,52 +250,52 @@ def generate_campaign_with_agents(request: MultiAgentCampaignRequest):
                 }
                 for s in market_signals
             ]
+        
+            # Get customer data for segmentation
+            crm_repo = get_crm_repository()
+            customers = crm_repo.get_all_customers()
+            customers_data = [
+                {
+                    "name": c.company_name,
+                    "segment": c.segment.value,
+                    "engagement_level": c.engagement_level.value,
+                    "annual_revenue": c.annual_revenue
+                }
+                for c in customers
+            ]
+            
+            # Prepare service details
+            service_details = {
+                "name": request.service_name,
+                "description": request.service_description or f"Enterprise {request.service_name} solution"
+            }
+            
+            # Prepare constraints
+            constraints = {
+                "budget": request.budget,
+                "timeline": request.timeline,
+                "target_segment": request.target_segment
+            }
+            
+            # Execute multi-agent workflow
+            result = coordinator.generate_campaign_with_agents(
+                objective=request.objective,
+                service_details=service_details,
+                market_signals=market_signals_data,
+                customers=customers_data,
+                constraints=constraints
+            )
+            
+            return MultiAgentCampaignResponse(
+                workflow_id=result["workflow_id"],
+                objective=result["objective"],
+                multi_agent_coordination=result["multi_agent_coordination"],
+                campaign_plan=result["campaign_plan"],
+                agents_involved=result["agents_involved"],
+                coordination_complete=result["coordination_complete"]
+            )
         finally:
             db.close()
-        
-        # Get customer data for segmentation
-        crm_repo = get_crm_repository()
-        customers = crm_repo.get_all_customers()
-        customers_data = [
-            {
-                "name": c.company_name,
-                "segment": c.segment.value,
-                "engagement_level": c.engagement_level.value,
-                "annual_revenue": c.annual_revenue
-            }
-            for c in customers
-        ]
-        
-        # Prepare service details
-        service_details = {
-            "name": request.service_name,
-            "description": request.service_description or f"Enterprise {request.service_name} solution"
-        }
-        
-        # Prepare constraints
-        constraints = {
-            "budget": request.budget,
-            "timeline": request.timeline,
-            "target_segment": request.target_segment
-        }
-        
-        # Execute multi-agent workflow
-        result = coordinator.generate_campaign_with_agents(
-            objective=request.objective,
-            service_details=service_details,
-            market_signals=market_signals_data,
-            customers=customers_data,
-            constraints=constraints
-        )
-        
-        return MultiAgentCampaignResponse(
-            workflow_id=result["workflow_id"],
-            objective=result["objective"],
-            multi_agent_coordination=result["multi_agent_coordination"],
-            campaign_plan=result["campaign_plan"],
-            agents_involved=result["agents_involved"],
-            coordination_complete=result["coordination_complete"]
-        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Multi-agent generation failed: {str(e)}")
 
@@ -308,18 +314,29 @@ def evaluate_and_learn(request: AgentEvaluationRequest):
     This is the self-correction loop that makes the agent smarter over time!
     """
     try:
-        from app.domain.services.agent.agent_coordinator import get_agent_coordinator
+        from app.domain.services.agent.agent_coordinator import AgentCoordinator
+        from app.infrastructure.persistence.repositories.agent_memory_repository import get_agent_memory_repository
+        from app.infrastructure.config.database import SessionLocal
         
-        coordinator = get_agent_coordinator()
-        
-        result = coordinator.evaluate_and_learn(
-            campaign_id=request.campaign_id,
-            campaign_data=request.campaign_data,
-            actual_metrics=request.actual_metrics,
-            strategy=request.strategy
-        )
-        
-        return result
+        # Create database session for repository
+        db = SessionLocal()
+        try:
+            # Create repository for agent memory persistence
+            agent_memory_repo = get_agent_memory_repository(db)
+            
+            # Create coordinator with repository for persistence
+            coordinator = AgentCoordinator(repository=agent_memory_repo)
+            
+            result = coordinator.evaluate_and_learn(
+                campaign_id=request.campaign_id,
+                campaign_data=request.campaign_data,
+                actual_metrics=request.actual_metrics,
+                strategy=request.strategy
+            )
+            
+            return result
+        finally:
+            db.close()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
 
