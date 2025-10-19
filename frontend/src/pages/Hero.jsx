@@ -36,32 +36,68 @@ function Hero() {
 
   const beneficiaries = [
     {
-      icon: "👔",
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="22" stroke="#4F9CFF" strokeWidth="2"/>
+          <path d="M24 14C19.6 14 16 17.6 16 22C16 24.4 17.2 26.6 19 28L19 32C19 33.1 19.9 34 21 34L27 34C28.1 34 29 33.1 29 32L29 28C30.8 26.6 32 24.4 32 22C32 17.6 28.4 14 24 14Z" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M20 32L20 35M28 32L28 35" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      ),
       title: "Marketing Teams",
       description: "Automate campaign planning and leverage AI to generate winning strategies based on real-time market data."
     },
     {
-      icon: "🚀",
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <path d="M24 8L26.5 18L36 14L30 22L40 24L30 26L36 34L26.5 30L24 40L21.5 30L12 34L18 26L8 24L18 22L12 14L21.5 18L24 8Z" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
       title: "Startups & Scale-ups",
       description: "Compete with enterprise marketing budgets by using AI-powered intelligence to make smarter, faster decisions."
     },
     {
-      icon: "🏢",
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <rect x="10" y="18" width="28" height="20" rx="2" stroke="#4F9CFF" strokeWidth="2"/>
+          <path d="M14 18V14C14 12.9 14.9 12 16 12H32C33.1 12 34 12.9 34 14V18" stroke="#4F9CFF" strokeWidth="2"/>
+          <path d="M10 24H38" stroke="#4F9CFF" strokeWidth="2"/>
+          <circle cx="24" cy="30" r="2" fill="#4F9CFF"/>
+        </svg>
+      ),
       title: "Enterprise Organizations",
       description: "Manage multi-channel campaigns at scale with complete observability and closed-loop learning."
     },
     {
-      icon: "🎯",
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="16" stroke="#4F9CFF" strokeWidth="2"/>
+          <circle cx="24" cy="24" r="10" stroke="#4F9CFF" strokeWidth="2"/>
+          <circle cx="24" cy="24" r="4" fill="#4F9CFF"/>
+          <path d="M24 8V16M24 32V40M8 24H16M32 24H40" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      ),
       title: "Digital Agencies",
       description: "Deliver exceptional results for multiple clients with automated campaign generation and performance tracking."
     },
     {
-      icon: "📊",
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <path d="M10 32L14 22L20 28L26 18L32 24L38 14" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <rect x="8" y="8" width="32" height="32" rx="2" stroke="#4F9CFF" strokeWidth="2"/>
+          <path d="M28 14L32 10L36 14" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
       title: "Data-Driven Leaders",
       description: "Make confident decisions backed by AI analysis of market signals, customer behavior, and campaign performance."
     },
     {
-      icon: "💡",
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <path d="M24 10C24 10 14 15 14 24C14 29.5 18.5 34 24 34C29.5 34 34 29.5 34 24C34 15 24 10 24 10Z" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <circle cx="24" cy="24" r="4" fill="#4F9CFF"/>
+          <path d="M24 10V6M10 24H6M24 38V42M38 24H42" stroke="#4F9CFF" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      ),
       title: "Innovation Teams",
       description: "Stay ahead of market trends with intelligent alerts and autonomous campaign optimization."
     }
@@ -168,7 +204,9 @@ function Hero() {
           <div className="benefits-grid">
             {beneficiaries.map((benefit, index) => (
               <div key={index} className="benefit-card">
-                <div className="benefit-icon">{benefit.icon}</div>
+                <div className="benefit-icon">
+                  {benefit.icon}
+                </div>
                 <h3 className="benefit-title">{benefit.title}</h3>
                 <p className="benefit-description">{benefit.description}</p>
               </div>

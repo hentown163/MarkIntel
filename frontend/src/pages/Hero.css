@@ -236,10 +236,17 @@
 }
 
 .benefit-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  display: inline-block;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   animation: bounce 2s ease-in-out infinite;
+}
+
+.benefit-icon svg {
+  width: 48px;
+  height: 48px;
+  transition: all 0.3s ease;
 }
 
 @keyframes bounce {
@@ -253,7 +260,11 @@
 
 .benefit-card:hover .benefit-icon {
   animation: none;
-  transform: scale(1.1);
+}
+
+.benefit-card:hover .benefit-icon svg {
+  transform: scale(1.15);
+  filter: drop-shadow(0 5px 15px rgba(79, 156, 255, 0.4));
 }
 
 .benefit-title {
