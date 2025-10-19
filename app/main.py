@@ -6,6 +6,7 @@ This is the new main application file using Clean Architecture principles.
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -138,6 +139,48 @@ def root():
             "audit_logs": "/api/audit"
         }
     }
+
+
+@app.get("/health")
+def health_check():
+    """
+    Kubernetes Liveness Probe
+    
+    Returns 200 OK if the application is alive and running.
+    This endpoint should always return successfully unless the app is completely dead.
+    """
+    return {"status": "healthy", "service": "nexusplanner-api"}
+
+
+@app.get("/ready")
+def readiness_check(db: Session = Depends(get_db)):
+    """
+    Kubernetes Readiness Probe
+    
+    Returns 200 OK if the application is ready to serve traffic.
+    Checks:
+    - Database connectivity
+    - Critical dependencies
+    
+    If this fails, Kubernetes will not route traffic to this pod.
+    """
+    try:
+        # Use text() for SQLAlchemy 2.x compatibility
+        db.execute(text("SELECT 1"))
+        db.commit()
+        
+        return {
+            "status": "ready",
+            "service": "nexusplanner-api",
+            "database": "connected",
+            "ai_provider": settings.llm_provider,
+            "version": settings.app_version
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Service not ready: {str(e)}"
+        )
 
 
 @app.post("/api/campaigns/generate", response_model=CampaignResponseDTO)

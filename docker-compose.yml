@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: nexusplanner-db
+    environment:
+      POSTGRES_USER: nexusplanner
+      POSTGRES_PASSWORD: nexusplanner_dev_password
+      POSTGRES_DB: nexusplanner
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexusplanner"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nexusplanner-network
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: nexusplanner-backend
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://nexusplanner:nexusplanner_dev_password@postgres:5432/nexusplanner
+      
+      # JWT Configuration
+      JWT_SECRET_KEY: dev-secret-key-change-in-production
+      
+      # AI Provider Configuration (choose one)
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}  # Options: openai, bedrock, rule-based
+      USE_AI_GENERATION: ${USE_AI_GENERATION:-true}
+      
+      # OpenAI Configuration
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5}
+      
+      # AWS Bedrock Configuration
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      BEDROCK_MODEL_NAME: ${BEDROCK_MODEL_NAME:-claude-3-5-sonnet}
+      
+      # Application Configuration
+      RUN_MIGRATIONS_ON_STARTUP: "true"
+      ENABLE_DATABASE_LOGGING: "true"
+      AGENT_LOG_RETENTION_DAYS: "90"
+      
+      # CORS Configuration
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173","http://frontend"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - nexusplanner-network
+    restart: unless-stopped
+
+  # React Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8000
+    container_name: nexusplanner-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - nexusplanner-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  nexusplanner-network:
+    driver: bridge
+
+# Usage Instructions:
+# 
+# Development with OpenAI:
+#   export OPENAI_API_KEY=your-key-here
+#   docker-compose up -d
+#
+# Development with AWS Bedrock:
+#   export LLM_PROVIDER=bedrock
+#   export AWS_ACCESS_KEY_ID=your-key-here
+#   export AWS_SECRET_ACCESS_KEY=your-secret-here
+#   export AWS_REGION=us-east-1
+#   docker-compose up -d
+#
+# Development without AI (rule-based):
+#   export LLM_PROVIDER=rule-based
+#   docker-compose up -d
+#
+# View logs:
+#   docker-compose logs -f backend
+#   docker-compose logs -f frontend
+#
+# Stop and remove containers:
+#   docker-compose down
+#
+# Stop and remove containers + volumes:
+#   docker-compose down -v

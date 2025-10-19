@@ -25,6 +25,8 @@ COPY --from=builder /app/.venv /app/.venv
 
 # Copy application code
 COPY app ./app
+COPY alembic ./alembic
+COPY alembic.ini ./
 COPY pyproject.toml ./
 
 # Create non-root user for security
@@ -38,6 +40,13 @@ USER appuser
 ENV DATABASE_URL=""
 ENV JWT_SECRET_KEY=""
 ENV OPENAI_API_KEY=""
+ENV AWS_REGION="us-east-1"
+ENV AWS_ACCESS_KEY_ID=""
+ENV AWS_SECRET_ACCESS_KEY=""
+ENV LLM_PROVIDER="openai"
+ENV BEDROCK_MODEL_NAME="claude-3-5-sonnet"
+ENV USE_AI_GENERATION="true"
+ENV RUN_MIGRATIONS_ON_STARTUP="false"
 ENV DEMO_MODE="false"
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/.venv/bin:$PATH"

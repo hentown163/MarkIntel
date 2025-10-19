@@ -1,0 +1,42 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nexusplanner-ingress
+  namespace: nexusplanner
+  annotations:
+    # AWS Load Balancer Controller annotations
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    
+    # Certificate Manager (uncomment when ACM certificate is ready)
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:<REGION>:<ACCOUNT>:certificate/<CERT_ID>
+    
+    # Security
+    alb.ingress.kubernetes.io/security-groups: <SECURITY_GROUP_ID>
+    alb.ingress.kubernetes.io/subnets: <SUBNET_IDS>
+    
+    # Tags
+    alb.ingress.kubernetes.io/tags: Environment=production,Application=nexusplanner
+spec:
+  rules:
+  - host: nexusplanner.example.com  # Replace with your domain
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: nexusplanner-backend
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nexusplanner-frontend
+            port:
+              number: 80

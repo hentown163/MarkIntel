@@ -12,11 +12,26 @@ class Settings(BaseSettings):
     
     database_url: str = "postgresql://localhost/nexusplanner"
     
+    # AI Provider Selection ("openai", "bedrock", "anthropic")
     llm_provider: str = "openai"
-    openai_api_key: Optional[str] = None
-    anthropic_api_key: Optional[str] = None
     
-    llm_model: str = "gpt-4"
+    # OpenAI Configuration
+    openai_api_key: Optional[str] = None
+    openai_model: str = "gpt-5"
+    
+    # Anthropic Configuration (for direct Anthropic API, not Bedrock)
+    anthropic_api_key: Optional[str] = None
+    anthropic_model: str = "claude-3-5-sonnet-20241022"
+    
+    # AWS Bedrock Configuration
+    aws_region: str = "us-east-1"
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    aws_bedrock_endpoint_url: Optional[str] = None  # For VPC endpoints
+    bedrock_model_name: str = "claude-3-5-sonnet"  # Options: claude-3-5-sonnet, claude-3-sonnet, claude-3-haiku, llama-3-2-90b
+    
+    # General LLM Settings
+    llm_model: str = "gpt-4"  # Legacy field for backward compatibility
     llm_temperature: float = 0.7
     llm_max_tokens: int = 2000
     

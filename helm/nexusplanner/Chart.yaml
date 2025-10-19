@@ -1,0 +1,19 @@
+apiVersion: v2
+name: nexusplanner
+description: NexusPlanner - AI-Powered Campaign Intelligence Platform with AWS Bedrock
+type: application
+version: 2.0.0
+appVersion: "2.0.0"
+keywords:
+  - marketing
+  - ai
+  - campaign
+  - bedrock
+  - claude
+maintainers:
+  - name: NexusPlanner Team
+    email: team@nexusplanner.example.com
+home: https://github.com/yourorg/nexusplanner
+sources:
+  - https://github.com/yourorg/nexusplanner
+icon: https://nexusplanner.example.com/icon.png

@@ -1,0 +1,222 @@
+# Default values for NexusPlanner Helm chart
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global settings
+global:
+  environment: production
+  region: us-east-1
+
+# Image configuration
+image:
+  backend:
+    repository: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/nexusplanner-backend
+    tag: "latest"
+    pullPolicy: Always
+  frontend:
+    repository: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/nexusplanner-frontend
+    tag: "latest"
+    pullPolicy: Always
+
+# Application configuration
+app:
+  name: NexusPlanner
+  version: "2.0.0"
+  
+  # AI Provider Selection
+  llmProvider: bedrock  # Options: openai, bedrock, rule-based
+  useAIGeneration: true
+  
+  # AWS Bedrock Configuration
+  aws:
+    region: us-east-1
+    bedrockModelName: claude-3-5-sonnet  # Options: claude-3-5-sonnet, claude-3-sonnet, claude-3-haiku, llama-3-2-90b
+    # IRSA (IAM Roles for Service Accounts) - Recommended for production
+    iamRoleArn: ""  # arn:aws:iam::<ACCOUNT_ID>:role/NexusPlannerBackendRole
+  
+  # OpenAI Configuration (if using OpenAI provider)
+  openai:
+    model: gpt-5
+  
+  # Application Settings
+  runMigrationsOnStartup: true
+  enableDatabaseLogging: true
+  agentLogRetentionDays: 90
+  
+  # JWT Configuration
+  jwt:
+    algorithm: HS256
+    accessTokenExpireMinutes: 480
+
+# Backend configuration
+backend:
+  replicaCount: 3
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  service:
+    type: ClusterIP
+    port: 8000
+  
+  probes:
+    liveness:
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      timeoutSeconds: 10
+    readiness:
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+    startup:
+      initialDelaySeconds: 0
+      periodSeconds: 10
+      failureThreshold: 12
+  
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+
+# Frontend configuration
+frontend:
+  replicaCount: 2
+  
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  
+  service:
+    type: ClusterIP
+    port: 80
+  
+  probes:
+    liveness:
+      initialDelaySeconds: 10
+      periodSeconds: 30
+    readiness:
+      initialDelaySeconds: 5
+      periodSeconds: 10
+  
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    # alb.ingress.kubernetes.io/certificate-arn: ""  # Set via --set or values override
+    # alb.ingress.kubernetes.io/security-groups: ""
+    # alb.ingress.kubernetes.io/subnets: ""
+  hosts:
+    - host: nexusplanner.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          backend: backend
+        - path: /
+          pathType: Prefix
+          backend: frontend
+  tls: []
+
+# Database configuration
+# For production, use AWS RDS Aurora PostgreSQL
+database:
+  # External database (RDS recommended)
+  external:
+    enabled: true
+    host: ""  # RDS endpoint
+    port: 5432
+    name: nexusplanner
+    username: nexusplanner
+    # Password should be set via secrets
+
+# Secrets configuration
+# WARNING: Do not commit actual secrets! Use one of:
+# - AWS Secrets Manager + External Secrets Operator
+# - Sealed Secrets
+# - Helm values override (--set-file or --set-string)
+secrets:
+  # Method: "manual" or "external-secrets"
+  method: external-secrets
+  
+  # External Secrets Operator configuration
+  externalSecrets:
+    enabled: true
+    backendType: secretsManager
+    refreshInterval: 1h
+    secretStoreRef: aws-secrets-manager
+    data:
+      DATABASE_URL:
+        key: nexusplanner/database-url
+      JWT_SECRET_KEY:
+        key: nexusplanner/jwt-secret
+      OPENAI_API_KEY:
+        key: nexusplanner/openai-api-key
+      AWS_ACCESS_KEY_ID:
+        key: nexusplanner/aws-access-key-id
+      AWS_SECRET_ACCESS_KEY:
+        key: nexusplanner/aws-secret-access-key
+
+# CORS configuration
+cors:
+  origins:
+    - "https://nexusplanner.example.com"
+
+# Security
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Service Account
+serviceAccount:
+  create: true
+  name: nexusplanner-backend
+  annotations: {}
+
+# Affinity rules
+affinity:
+  podAntiAffinity:
+    enabled: true
+
+# Tags
+tags:
+  Environment: production
+  Application: nexusplanner
+  ManagedBy: helm
+
+# Monitoring (if using Prometheus)
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+    interval: 30s
