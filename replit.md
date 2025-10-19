@@ -11,17 +11,49 @@ NexusPlanner is an **enterprise-grade GenAI Agent platform** that autonomously p
 - **Enterprise Integration Ready**: Built to connect with CRM systems (HubSpot, Salesforce)
 
 ## Recent Updates (October 19, 2025)
-**Full Agentic AI with Persistent Memory - PRODUCTION READY!** ✅
 
-NexusPlanner now features complete autonomous AI system with **fully integrated database persistence**:
+### JWT Authentication with AWS Active Directory Integration - PRODUCTION READY! 🔐
+**Latest Update:** Full enterprise authentication system with AWS AD/LDAP integration
+
+**Authentication Features:**
+- **JWT Token-Based Authentication**: Secure 8-hour session tokens with industry-standard encryption
+- **AWS Active Directory Integration**: Authenticate users against your corporate LDAP/AD server
+- **Complete API Protection**: All business endpoints require valid authentication tokens
+- **Modern Login UI**: Clean, responsive login page with error handling and loading states
+- **Automatic Token Management**: Frontend seamlessly handles token storage and injection
+- **Session Persistence**: Users stay logged in across browser refreshes
+- **Secure Logout**: Proper token cleanup and session termination
+
+**Security Implementation:**
+- ✅ Fail-fast JWT secret key validation (prevents insecure defaults)
+- ✅ All API routes protected with authentication middleware
+- ✅ Router-level security on agent and audit endpoints
+- ✅ LDAP over SSL/TLS support for secure AD connections
+- ✅ HTTP-only Bearer token authentication
+- ✅ Frontend auth context with automatic token refresh
+- ✅ Protected route components blocking unauthorized access
+
+**Authentication Endpoints:**
+- `POST /api/auth/login` - Login with AWS AD credentials
+- `GET /api/auth/me` - Get current user information
+- `POST /api/auth/logout` - Logout and clear session
+- `GET /api/auth/health` - Authentication service health check
+
+**Configuration:** See `AUTH_SETUP.md` for complete setup instructions
+
+---
+
+### Full Agentic AI with Persistent Memory - PRODUCTION READY! ✅
+
+NexusPlanner features complete autonomous AI system with **fully integrated database persistence**:
 
 **Core Capabilities:**
 - **Multi-Step Reasoning Loops**: AI plans, executes, and adapts its approach dynamically
 - **Self-Correction Mechanisms**: Agent learns from campaign outcomes and improves over time
-- **Persistent Memory**: All learnings and context stored in PostgreSQL database across sessions ✅ **NOW FULLY INTEGRATED**
+- **Persistent Memory**: All learnings and context stored in PostgreSQL database across sessions
 - **Multi-Agent Coordination**: 4 specialized agents working together (ResearchAgent, StrategyAgent, ExecutionAgent, EvaluationAgent)
 
-**Persistence Integration (October 19, 2025):**
+**Persistence Integration:**
 - ✅ AgentMemoryRepository integrated into all agents
 - ✅ Agents persist memories, learnings, and workflows to PostgreSQL
 - ✅ Historical learnings loaded automatically on agent initialization
@@ -29,7 +61,7 @@ NexusPlanner now features complete autonomous AI system with **fully integrated 
 - ✅ Database session management with proper lifecycle handling
 - ✅ Production-ready and architect-reviewed
 
-**API Endpoints:**
+**Agent API Endpoints (Protected):**
 - `POST /api/agent/multi-agent/generate-campaign` - Full multi-agent campaign generation with persistence
 - `POST /api/agent/multi-agent/evaluate-and-learn` - Self-correction and learning with database storage
 - `GET /api/agent/multi-agent/workflows` - View active agent workflows
