@@ -1,0 +1,130 @@
+Compact unit-test checklist (use as acceptance criteria)
+Backend (FastAPI, SQLAlchemy, Pydantic)
+
+Unit tests for Domain & Use Cases
+
+Campaign creation/generation logic (with GPT adapter mocked).
+
+Campaign regeneration and channel strategy generation.
+
+Feedback handling (like/dislike) and feedback history persistence.
+
+Agent autonomous plan creation and multi-step plan serialization.
+
+Closed-loop evaluation/update logic for campaign outcomes.
+
+Repository / Persistence
+
+Repository methods: create/read/update/delete campaigns, agent decisions, traces, audit logs.
+
+Data integrity and value object constraints (immutability / validation).
+
+Retention policy enforcement logic (scheduled/purge). Use test DB or in-memory mocks.
+
+API Layer (FastAPI routes)
+
+Authenticated/unauthenticated access: JWT + AD integration stubs.
+
+Route validation (Pydantic schemas): invalid inputs produce 4xx.
+
+Observability endpoints: trace retrieval, filters, pagination.
+
+Status filters (All, Active, Draft, Completed) and search endpoints.
+
+Adapters & External Services (mocked)
+
+OpenAI GPT and Embeddings adapter responses (simulate success, rate-limit, errors).
+
+Vector store similarity & RAG retrieval logic (scikit-learn/Numpy stubs).
+
+CRM integrations (HubSpot/Salesforce) — stub API success/failure paths.
+
+Security & Error Handling
+
+JWT verification failure, expired token, and permission checks.
+
+Database errors, adapter timeouts, and graceful fallback behavior.
+
+Observability & Audit
+
+Audit log persistence for agent decisions and traces.
+
+Querying audit trail with filters/time-range.
+
+Unit-test hygiene
+
+Use fixtures for typical domain objects.
+
+Achieve high unit coverage for business logic (target ≥80% for domain/use-case modules).
+
+Clear test setup/teardown for DB or use repository mocks.
+
+Frontend (React + Vite + Axios)
+
+Component tests
+
+5-step campaign generator: step transitions, validation, and final submit action calls API client.
+
+Campaign list: renders items, respects status filters, supports search and delete action (confirm modal).
+
+Campaign modals: open/close behavior, form validation, and submit/cancel actions.
+
+Custom hooks & state
+
+Hooks that wrap API client: loading, success, error states.
+
+Observability Dashboard hooks: filter application, pagination, and detail view expansions.
+
+API client
+
+Centralized client: correct route construction, token injection (JWT), error mapping.
+
+Axios stubs for success, error, and network-failure cases.
+
+Routing & integration
+
+Routes render expected components (React Router). Test route params handling for campaign detail pages.
+
+UI behavior & edge cases
+
+Empty states, error banners, skeleton loaders.
+
+Real-time filtering: applying filter updates the displayed items.
+
+Accessibility basics (buttons with accessible names, modal focus traps).
+
+Visual & styling sanity
+
+Ensure dark-theme default applied (smoke test).
+
+CSS custom properties are present where components rely on them (unit check).
+
+Test utilities & coverage
+
+Use React Testing Library + Jest (or Vitest) for unit tests.
+
+Mock Axios via jest.mock or msw for network-level behavior in unit tests.
+
+Achieve high coverage on components and hooks (target ≥80% for critical UI modules).
+
+Suggested deliverables (concrete)
+
+Unit-test files for backend (pytest) organized under tests/unit/ with fixtures and mocked adapters.
+
+Unit-test files for frontend (Vitest/Jest + React Testing Library) under src/__tests__/.
+
+Mock implementations for:
+
+OpenAI adapter
+
+Vector store / embeddings
+
+CRM adapters
+
+JWT validation (test-only stub)
+
+Example CI configuration snippet to run tests and upload coverage (GitHub Actions / GitLab CI).
+
+README: how to run tests locally, run subset (backend/frontend), generate coverage report.
+
+A short mapping document linking each test to the feature spec/acceptance criteria.
