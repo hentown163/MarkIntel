@@ -7,10 +7,15 @@ from datetime import datetime, timedelta
 from app.infrastructure.config.database import get_db
 from app.infrastructure.persistence.repositories.agent_decision_repository import AgentDecisionRepository
 from app.infrastructure.observability.models import DecisionType
+from app.core.auth_middleware import get_current_user, TokenData
 from pydantic import BaseModel
 
 
-router = APIRouter(prefix="/api/audit", tags=["audit"])
+router = APIRouter(
+    prefix="/api/audit",
+    tags=["audit"],
+    dependencies=[Depends(get_current_user)]
+)
 
 
 class DecisionResponse(BaseModel):

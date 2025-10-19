@@ -1,5 +1,5 @@
 """API routes for autonomous agent operations"""
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
@@ -7,9 +7,14 @@ from app.domain.services.agent.reasoning_engine import get_reasoning_engine
 from app.infrastructure.observability.agent_logger import get_agent_logger
 from app.infrastructure.rag.mock_crm_repository import get_crm_repository
 from app.infrastructure.rag.vector_store import get_vector_store
+from app.core.auth_middleware import get_current_user, TokenData
 
 
-router = APIRouter(prefix="/api/agent", tags=["agent"])
+router = APIRouter(
+    prefix="/api/agent",
+    tags=["agent"],
+    dependencies=[Depends(get_current_user)]
+)
 
 
 class AgentPlanRequest(BaseModel):
