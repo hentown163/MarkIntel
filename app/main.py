@@ -59,11 +59,32 @@ app.add_middleware(
 )
 
 
+def run_migrations():
+    """Run Alembic migrations programmatically"""
+    from alembic.config import Config
+    from alembic import command
+    
+    alembic_cfg = Config("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
+
+
 @app.on_event("startup")
 def startup_event():
     """Initialize database on startup"""
     print("Initializing database...")
-    init_db()
+    
+    if settings.run_migrations_on_startup:
+        print("Running database migrations...")
+        try:
+            run_migrations()
+            print("Database migrations completed successfully")
+        except Exception as e:
+            print(f"Migration warning: {e}")
+            print("Falling back to init_db()...")
+            init_db()
+    else:
+        print("Skipping automatic migrations (RUN_MIGRATIONS_ON_STARTUP=False)")
+        init_db()
     
     db = next(get_db())
     try:

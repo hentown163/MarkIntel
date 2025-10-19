@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     enable_database_logging: bool = True
     agent_log_retention_days: int = 90
     
+    # Database Migration Settings
+    run_migrations_on_startup: bool = True
+    
     # Authentication Settings
     jwt_secret_key: Optional[str] = None
     jwt_algorithm: str = "HS256"
