@@ -38,11 +38,11 @@ class Settings(BaseSettings):
     use_ai_generation: bool = True
     
     # Agent Observability Settings
-    enable_database_logging: bool = True
+    enable_database_logging: bool = False
     agent_log_retention_days: int = 90
     
     # Database Migration Settings
-    run_migrations_on_startup: bool = True
+    run_migrations_on_startup: bool = False
     
     # Authentication Settings
     jwt_secret_key: Optional[str] = None
