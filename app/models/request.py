@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 
 class CampaignGenerationRequest(BaseModel):
@@ -7,3 +7,15 @@ class CampaignGenerationRequest(BaseModel):
     competitors: Optional[str] = None
     additional_context: Optional[str] = None
     duration_days: Optional[int] = 30
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserRegistrationRequest(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
+    full_name: Optional[str] = None

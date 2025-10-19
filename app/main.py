@@ -18,6 +18,7 @@ from app.application.dtos.request.campaign_feedback_request import CampaignFeedb
 from app.application.dtos.request.update_campaign_request import UpdateCampaignRequestDTO
 from app.application.dtos.response.campaign_response import CampaignResponseDTO, CampaignListResponseDTO
 from app.application.dtos.response.feedback_response import FeedbackResponseDTO
+from app.models.request import LoginRequest, UserRegistrationRequest
 
 from app.infrastructure.persistence.seed_data import seed_database
 from app.api.routes import agent, audit
@@ -814,15 +815,15 @@ def test_notification(notification_data: dict):
 
 
 @app.post("/api/auth/register")
-def register_user(user_data: dict, db: Session = Depends(get_db)):
+def register_user(user_data: UserRegistrationRequest, db: Session = Depends(get_db)):
     """Register a new user"""
     from app.utils.auth_helpers import get_password_hash
     from app.infrastructure.persistence.models.user_orm import UserORM
     import uuid
     
     existing = db.query(UserORM).filter(
-        (UserORM.email == user_data.get("email")) | 
-        (UserORM.username == user_data.get("username"))
+        (UserORM.email == user_data.email) | 
+        (UserORM.username == user_data.username)
     ).first()
     
     if existing:
@@ -830,10 +831,10 @@ def register_user(user_data: dict, db: Session = Depends(get_db)):
     
     user = UserORM(
         id=str(uuid.uuid4()),
-        email=user_data.get("email"),
-        username=user_data.get("username"),
-        hashed_password=get_password_hash(user_data.get("password")),
-        full_name=user_data.get("full_name"),
+        email=user_data.email,
+        username=user_data.username,
+        hashed_password=get_password_hash(user_data.password),
+        full_name=user_data.full_name,
         role="user"
     )
     
@@ -850,15 +851,15 @@ def register_user(user_data: dict, db: Session = Depends(get_db)):
 
 
 @app.post("/api/auth/login")
-def login_user(credentials: dict, db: Session = Depends(get_db)):
+def login_user(credentials: LoginRequest, db: Session = Depends(get_db)):
     """Login user and return JWT token"""
     from app.utils.auth_helpers import verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
     from app.infrastructure.persistence.models.user_orm import UserORM
     from datetime import timedelta, datetime
     
-    user = db.query(UserORM).filter(UserORM.email == credentials.get("email")).first()
+    user = db.query(UserORM).filter(UserORM.email == credentials.email).first()
     
-    if not user or not verify_password(credentials.get("password"), user.hashed_password):
+    if not user or not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     if not user.is_active:
