@@ -13,6 +13,7 @@ from app.domain.services.agent.specialized_agents import (
     AgentRole
 )
 from app.infrastructure.observability.agent_logger import get_agent_logger
+from app.infrastructure.persistence.repositories.agent_memory_repository import AgentMemoryRepository
 
 
 @dataclass
@@ -39,11 +40,12 @@ class AgentCoordinator:
     - Synthesizes results from multiple agents
     """
     
-    def __init__(self):
-        self.research_agent = get_research_agent()
-        self.strategy_agent = get_strategy_agent()
-        self.execution_agent = get_execution_agent()
-        self.evaluation_agent = get_evaluation_agent()
+    def __init__(self, repository: Optional[AgentMemoryRepository] = None):
+        self.repository = repository
+        self.research_agent = get_research_agent(repository)
+        self.strategy_agent = get_strategy_agent(repository)
+        self.execution_agent = get_execution_agent(repository)
+        self.evaluation_agent = get_evaluation_agent(repository)
         self.logger = get_agent_logger()
         
         self.active_workflows: Dict[str, MultiAgentWorkflow] = {}
@@ -82,9 +84,40 @@ class AgentCoordinator:
         
         self.active_workflows[workflow_id] = workflow
         
+        # Persist workflow to database
+        if self.repository:
+            db_workflow = self.repository.store_coordination_workflow(
+                coordinator_agent="agent_coordinator",
+                participant_agents=["research_agent", "strategy_agent", "execution_agent"],
+                task_type="campaign_generation",
+                task_description=objective,
+                total_steps=3,
+                agent_assignments={
+                    "research": "gather_intelligence",
+                    "strategy": "develop_plan",
+                    "execution": "implement_campaign"
+                },
+                session_id=session_id
+            )
+            coordination_id = db_workflow.coordination_id
+        else:
+            coordination_id = None
+        
         # PHASE 1: Research Agent gathers intelligence
         workflow.current_phase = "research"
         self._log_phase(workflow_id, "Research Agent gathering market intelligence")
+        
+        if self.repository and coordination_id:
+            self.repository.update_workflow_progress(
+                coordination_id=coordination_id,
+                current_step=1,
+                workflow_state="in_progress",
+                communication_entry={
+                    "phase": "research",
+                    "timestamp": datetime.now().isoformat(),
+                    "description": "Research Agent gathering intelligence"
+                }
+            )
         
         # Request market research
         research_request = AgentMessage(
@@ -133,6 +166,18 @@ class AgentCoordinator:
         workflow.current_phase = "strategy"
         self._log_phase(workflow_id, "Strategy Agent developing campaign plan")
         
+        if self.repository and coordination_id:
+            self.repository.update_workflow_progress(
+                coordination_id=coordination_id,
+                current_step=2,
+                workflow_state="in_progress",
+                communication_entry={
+                    "phase": "strategy",
+                    "timestamp": datetime.now().isoformat(),
+                    "description": "Strategy Agent developing plan"
+                }
+            )
+        
         research_findings = {
             "trends_identified": market_research.get("trends_identified", []),
             "segment_insights": segment_analysis
@@ -163,6 +208,18 @@ class AgentCoordinator:
         # PHASE 3: Execution Agent creates implementation plan
         workflow.current_phase = "execution"
         self._log_phase(workflow_id, "Execution Agent creating implementation plan")
+        
+        if self.repository and coordination_id:
+            self.repository.update_workflow_progress(
+                coordination_id=coordination_id,
+                current_step=3,
+                workflow_state="in_progress",
+                communication_entry={
+                    "phase": "execution",
+                    "timestamp": datetime.now().isoformat(),
+                    "description": "Execution Agent creating implementation plan"
+                }
+            )
         
         execution_request = AgentMessage(
             from_agent="coordinator",
@@ -197,6 +254,14 @@ class AgentCoordinator:
         
         workflow.status = "completed"
         workflow.results["final"] = final_result
+        
+        # Persist workflow completion
+        if self.repository and coordination_id:
+            self.repository.complete_workflow(
+                coordination_id=coordination_id,
+                result=final_result,
+                success=True
+            )
         
         return final_result
     

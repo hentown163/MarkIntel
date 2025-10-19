@@ -644,21 +644,29 @@ _execution_agent = ExecutionAgent()
 _evaluation_agent = EvaluationAgent()
 
 
-def get_research_agent() -> ResearchAgent:
-    """Get the global research agent instance"""
+def get_research_agent(repository: Optional[AgentMemoryRepository] = None, session_id: Optional[str] = None) -> ResearchAgent:
+    """Get a research agent instance (with optional repository for persistence)"""
+    if repository:
+        return ResearchAgent(repository=repository, session_id=session_id)
     return _research_agent
 
 
-def get_strategy_agent() -> StrategyAgent:
-    """Get the global strategy agent instance"""
+def get_strategy_agent(repository: Optional[AgentMemoryRepository] = None, session_id: Optional[str] = None) -> StrategyAgent:
+    """Get a strategy agent instance (with optional repository for persistence)"""
+    if repository:
+        return StrategyAgent(repository=repository, session_id=session_id)
     return _strategy_agent
 
 
-def get_execution_agent() -> ExecutionAgent:
-    """Get the global execution agent instance"""
+def get_execution_agent(repository: Optional[AgentMemoryRepository] = None, session_id: Optional[str] = None) -> ExecutionAgent:
+    """Get an execution agent instance (with optional repository for persistence)"""
+    if repository:
+        return ExecutionAgent(repository=repository, session_id=session_id)
     return _execution_agent
 
 
-def get_evaluation_agent() -> EvaluationAgent:
-    """Get the global evaluation agent instance"""
+def get_evaluation_agent(repository: Optional[AgentMemoryRepository] = None, session_id: Optional[str] = None) -> EvaluationAgent:
+    """Get an evaluation agent instance (with optional repository for persistence)"""
+    if repository:
+        return EvaluationAgent(repository=repository, session_id=session_id)
     return _evaluation_agent
