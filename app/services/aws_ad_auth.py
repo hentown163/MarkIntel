@@ -14,10 +14,11 @@ class AWSADAuthService:
         self.ad_domain = os.getenv("AWS_AD_DOMAIN")
         self.ad_base_dn = os.getenv("AWS_AD_BASE_DN")
         self.ad_use_ssl = os.getenv("AWS_AD_USE_SSL", "true").lower() == "true"
+        self.demo_mode = os.getenv("DEMO_MODE", "false").lower() == "true"
         
     def authenticate_user(self, username: str, password: str) -> Optional[Dict]:
         """
-        Authenticate user against AWS Active Directory
+        Authenticate user against AWS Active Directory or demo credentials
         
         Args:
             username: User's username (without domain)
@@ -26,8 +27,12 @@ class AWSADAuthService:
         Returns:
             User information dict if authenticated, None otherwise
         """
+        # Check for demo credentials first (only if demo mode is enabled)
+        if self.demo_mode and self._authenticate_demo_user(username, password):
+            return self._get_demo_user_info(username)
+        
         if not self.ad_server or not self.ad_domain:
-            raise ValueError("AWS AD configuration is missing. Please set AWS_AD_SERVER and AWS_AD_DOMAIN environment variables.")
+            return None
         
         try:
             # Create LDAP server connection
@@ -109,6 +114,61 @@ class AWSADAuthService:
                 "department": None,
                 "groups": []
             }
+    
+    def _authenticate_demo_user(self, username: str, password: str) -> bool:
+        """
+        Authenticate demo users for testing/demo purposes
+        
+        Args:
+            username: Username to check
+            password: Password to check
+            
+        Returns:
+            True if demo credentials are valid, False otherwise
+        """
+        demo_users = {
+            "demo": "demo123",
+            "admin": "admin123",
+            "user": "user123"
+        }
+        return username in demo_users and demo_users[username] == password
+    
+    def _get_demo_user_info(self, username: str) -> Dict:
+        """
+        Get demo user information
+        
+        Args:
+            username: Demo username
+            
+        Returns:
+            User information dictionary
+        """
+        demo_user_data = {
+            "demo": {
+                "username": "demo",
+                "email": "demo@nexusplanner.com",
+                "display_name": "Demo User",
+                "department": "Marketing"
+            },
+            "admin": {
+                "username": "admin",
+                "email": "admin@nexusplanner.com",
+                "display_name": "Admin User",
+                "department": "Administration"
+            },
+            "user": {
+                "username": "user",
+                "email": "user@nexusplanner.com",
+                "display_name": "Test User",
+                "department": "Sales"
+            }
+        }
+        return demo_user_data.get(username, {
+            "username": username,
+            "email": f"{username}@nexusplanner.com",
+            "display_name": username.title(),
+            "department": "General"
+        })
     
     def create_user_token(self, user_info: Dict) -> str:
         """

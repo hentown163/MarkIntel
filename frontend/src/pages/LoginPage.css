@@ -148,6 +148,50 @@
   text-align: center;
 }
 
+.demo-credentials-box {
+  background: rgba(79, 156, 249, 0.05);
+  border: 1px solid rgba(79, 156, 249, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.demo-title {
+  color: #4f9cf9;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.demo-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.demo-option {
+  color: #cbd5e1;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.demo-option strong {
+  color: #e2e8f0;
+  min-width: 90px;
+}
+
+.demo-option code {
+  background: rgba(79, 156, 249, 0.1);
+  color: #4f9cf9;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
 .help-text {
   color: #64748b;
   font-size: 13px;

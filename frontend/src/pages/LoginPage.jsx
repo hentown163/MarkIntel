@@ -115,8 +115,22 @@ export default function LoginPage() {
         </form>
 
         <div className="login-footer">
+          <div className="demo-credentials-box">
+            <p className="demo-title">Demo Credentials</p>
+            <div className="demo-options">
+              <div className="demo-option">
+                <strong>Demo User:</strong> <code>demo</code> / <code>demo123</code>
+              </div>
+              <div className="demo-option">
+                <strong>Admin:</strong> <code>admin</code> / <code>admin123</code>
+              </div>
+              <div className="demo-option">
+                <strong>Test User:</strong> <code>user</code> / <code>user123</code>
+              </div>
+            </div>
+          </div>
           <p className="help-text">
-            Sign in with your AWS Active Directory credentials
+            Or sign in with your AWS Active Directory credentials
           </p>
         </div>
       </div>
